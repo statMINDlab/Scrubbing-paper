@@ -1,0 +1,5 @@
+/N/project/hcp_dcwan
+/N/project/hcp_dcwan/retest
+~/Desktop/Data/HCP_Retest
+~/Desktop/workbench
+/Applications/workbench

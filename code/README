@@ -1,0 +1,61 @@
+# Cost of Scrubbing
+
+Two different working directories for this project:
+Storage on cluster: /N/project/LevScrubbing/Scrubbing-Cost (can be accessed from HPC systems)
+GitHub: mandymejia/Scrubbing-paper (can be accessed from HPC systems and locally)
+* GitHub repository should be cloned to 'GitHub' folder in 'Documents' on either system
+
+To replicate:
+
+I. On cluster with access to HCP data, run scripts numbered 1-6 in order. These scripts save results to the cluster storage project directory 
+for use in later scripts.
+  a. '1_ParcMatLabels.R' saves results to GitHub so it can be run locally or on IU HPC systems
+
+II. Run "compute" scripts starting with 7 or 8.
+
+III. Run remaining scripts starting with 7 or 8. These scripts only refer to results saved in Github and can
+therefore be run locally or on HPC systems. These scripts include:
+'7a_Analysis_MAE_edges.R' -- make plots related to edge-wise median absolute error analysis of FC 
+'7a_Analysis_MAE_plots.R' -- make other plots related to median absolute error analysis of FC
+'7b_Analysis_QCFC_plot.R' and '7b_Analysis_QCFC_dist.R' -- make plots related to QCFC and distance-QCFC analysis
+'8_BWAS_visualize.R' - make plots related to brain-wise association studies values 
+
+Note: The script 'FC_vis_funs.R' is sourced within other scripts and does not need to be run explicitly
+
+## Full list of scripts in order
+
+Group I (no inter-dependencies)
+'1_MeanSignals.R'
+'1_ParcMatLabels.R'
+'2_ScrubMeas_DVARS.R'
+'2_ScrubMeas_FD.R'
+
+Group II
+'3_FC.R'
+'3_FC_timeseries.R'
+'3_AggFD.R'
+
+Group III
+'4_AggFCandFlags.R'
+'4_FC_ACFs.R'
+
+Group IV
+'5_error.R'
+'5_AggFlags.R'
+
+Group V
+'5_FCgt_plot.R'
+'6_ScrubbingRate.R'
+'6_ScrubbingRate_S1200.R'
+
+Group VI
+'7a_Analysis_MAE_compute.R'
+'7b_Analysis_QCFC_compute.R'
+'8_BWAS_compute.R'
+
+Group VII
+'7a_Analysis_MAE_edges.R' 
+'7a_Analysis_MAE_plots.R'
+'7b_Analysis_QCFC_dist.R'
+'7b_Analysis_QCFC_plot.R'
+'8_BWAS_visualize.R'
