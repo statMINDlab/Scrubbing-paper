@@ -20,7 +20,6 @@ parc_labs <- rownames(parc_cols)
 # Begin to make `ParcMat`: vertices along rows, parcels along columns
 ParcMat <- matrix(0, nrow=parc_res+1, ncol=nVox)
 ParcMat[c(1+as.matrix(parc_cii)) + seq(0, nVox-1)*(parc_res+1)] <- 1
-# table(colSums(ParcMat)) all ones
 
 # Get CIFTI medial wall mask and subcortex labels.
 # These masks are the same for all CIFTI files in the HCP.
@@ -43,11 +42,6 @@ ParcMat <- rbind(ParcMat, ParcMatSub)
 # By dividing each row by its sum, we can use matrix multiplication to compute the mean fMRI signal
 ParcMat <- t(ParcMat / apply(ParcMat, 1, sum))
 dimnames(ParcMat) <- NULL
-# Number of vertices/voxels per parcel
-#   summary(apply(ParcMat > 0, 2, sum))
-# 806 vertices not included in any parcel
-#   (location: below medial wall)
-#   sum(ParcMat[,1])
 ParcMat <- ParcMat[,seq(2,ncol(ParcMat))]
 saveRDS(ParcMat, parc_fname)
 
@@ -64,7 +58,6 @@ PLabs <- data.frame(
   gidx = as.numeric(vapply(PLabs, '[', i=4, "")) # formerly gidx
 )
 PLabs$network <- gsub("A$|B$|C$", "", PLabs$network2)
-# PLabs$network <- gsub("Language|Aud", "LanAud", PLabs$network)
 
 PLabs$idx <- seq(parc_res)
 # `idx2`: # network, bs/hemisphere, network2, group, gidx
@@ -176,6 +169,7 @@ Labs$network_color[seq(parc_res)] <- Labs2$label_color[match(Labs$network[seq(pa
 Labs$network_color[grepl("Default", Labs$network2)] <- Labs$label_color[which(Labs$group2=="DefaultB")[1]] # Manually change this one.
 Labs$network_color[grepl("Auditory", Labs$network2)] <- Labs$label_color[which(Labs$group2=="DefaultA")[1]] # Manually change this one.
 Labs$group_color[seq(parc_res+1, parc_res2)] <- Labs2$label_color[match(Labs$group[seq(parc_res+1, parc_res2)], Labs2$group)]
+
 # Lighter subcortical shades
 Labs$group_color[Labs$group_color=="#007b7d"] <- "#30998f"
 Labs$group_color[Labs$group_color=="#dcd814"] <- "#fefb7d"
@@ -187,11 +181,9 @@ parc_cii2 <- parc_cii
 parc_cii2$meta$cifti$labels$parcels[seq(parc_res)+1,c("Red", "Green", "Blue")] <- c(t(col2rgb(Labs$network_color[seq(parc_res)], alpha=FALSE))/255)
 plot(parc_cii2, borders=TRUE, fname=file.path(dir_Parc, "Kong2022_recolor"), title="Kong 2022 colored by network")
 
-
-### Blank matrix visualization with network labels
+### Blank matrix visualization with network labels -----------------------------
 
 networklabels <- TRUE
-
 source(file.path(dir_github, "code", "FC_vis_funs.R")) #tools and functions for FC matrix visualization
 
 plot_fun <- function(p_adj = NULL, title, legTitle, blank_matrix = TRUE){

@@ -41,31 +41,20 @@ rm(QCFC_naive_df0, QCFC_adj_df0, QCFC_within_df0)
 
 ### PLOT TYPE 1: QC-FC in FC matrix form
 
-source(file.path(dir_github, "code", "FC_vis_funs.R")) #tools and functions for FC matrix visualization
+source(file.path(dir_github, "code", "FC_vis_funs.R")) 
 
 #this function loops over scrubbing levels (typically to make a multi-page PDF)
 plot_fun <- function(df, val_name, baseName, p_adj = NULL, legTitle, title, FD_levels){
-  #p_adj = method for p.adjust if applicable
 
   #loop over scrubbing (reordered from least to most)
   for (FD_ss in FD_levels) {
 
     #grab values from DF
-    #FD_ss <- FD_levels[ss]
     vals <- df[,val_name]
     vals_bs <- vals[df$base==baseName & df$scrub==FD_ss]
 
-    # if(!is.null(p_adj)){
-    #   #for plotting p-values
-    #   vals_bs <- p.adjust(vals_bs, method = p_adj)
-    #   vals_bs <- 1*(vals_bs < 0.01)
-    #   lims <- c(0, 1)
-    #   colFUN = seq2
-    # } else {
-      #for plotting QC-FC correlation estimates
     lims <- c(-0.3, 0.3)
-    colFUN = seq3div2 #updated --> (turquoise, white, orange)
-    # }
+    colFUN = seq3div2 
 
     vals_bs[vals_bs < lims[1]] <- lims[1]
     vals_bs[vals_bs > lims[2]] <- lims[2]
@@ -98,17 +87,12 @@ firstup <- function(x) {
   x
 }
 
-#FD_reo <- FD_levels2[-4]
 nFD <- length(FD_levels)
 
 #loop over denoising
 for (bb in 1:nB) {
 
   print(baseName <- baseNames[bb])
-
-  ### 1) Plot QC-FC estimates for each scrubbing level
-  ### 2) Plot corrected p-values for each scrubbing level
-
 
   #loop over Naive, Within-Subject and Between-Subject QCFC
   for(meas in c('naive','within','between')){
@@ -128,7 +112,6 @@ for (bb in 1:nB) {
 
     #PNGs (one per scrubbing level)
 
-    #nS <- length(FD_reo)
     for(ss in 1:nFD){
 
       FD_ss <- FD_levels[ss]
@@ -166,56 +149,3 @@ for (bb in 1:nB) {
   }
 
 } # end loop over baseline denoising methods
-
-
-
-# HERE -- for each edge, average QC-FC measures among distal nodes for each node and make images (focus on between-subject)
-
-
-# ### PLOT: QC-FC averaged across connections, plotted on the brain
-#
-# plot_fun <- function(xii, fname_start, fname_end, zlim = c(-0.35, 0.35), titles = unique(Labs_reo$network2)[1:8], fnames = Labs_networks3){
-#   #pal <- c("white","gray90", "pink1", "red","red4")
-#   pal <- c("darkblue","dodgerblue","skyblue","gray90","white","gray90", "pink1", "red","red4")
-#   plot(xii, zlim = zlim,
-#        colors=pal,
-#        idx = 1:ncol(xii),
-#        title = titles,
-#        fname = paste0(fname_start, fnames, fname_end))
-# }
-#
-# #everything except DMN, FP (too close), and L (inconsistent info on what it is)
-# inds_nonDMN <- c(1,4,5:8)
-#
-# for (bb in 3:nB) {
-#   print(baseName <- baseNames[bb])
-#
-#   for (ss in 1:nScrub) {
-#
-#     print(FD_ss <- scrubNames2[ss]) #partial file name
-#     fname_end <- paste0("_", FD_ss)
-#     fname_start <- file.path('plots','QCFC',baseName, 'QCFC_')
-#
-#     #Naive QCFC
-#     vals_bs <- QCFC_naive_df$QCFC[QCFC_naive_df$base==baseName & QCFC_naive_df$scrub==FD_ss]
-#     xii_bs <- ggImgplot2(vals_bs, zlim = c(-0.35, 0.35))
-#     plot_fun(xii_bs, fname_start = paste0(fname_start, "Naive_"), fname_end = fname_end)
-#
-#     #Within-Subject QCFC
-#     vals_bs <- QCFC_adj_df$QCFC_within[QCFC_adj_df$base==baseName & QCFC_adj_df$scrub==FD_ss]
-#     xii_bs <- ggImgplot2(vals_bs, zlim = c(-0.35, 0.35))
-#     plot_fun(xii_bs, fname_start = paste0(fname_start, "Within_"), fname_end = fname_end)
-#     xii_bs2 <- newdata_xifti(xii_bs, rowMeans(as.matrix(xii_bs)[,inds_nonDMN]))
-#     plot_fun(xii_bs2, titles = "nonDMN", fnames="nonDMN", fname_start = paste0(fname_start, "Within_"), fname_end = fname_end, zlim = c(-0.35, 0.35))
-#
-#     #Between-Subject QCFC
-#     vals_bs <- QCFC_adj_df$QCFC_between[QCFC_adj_df$base==baseName & QCFC_adj_df$scrub==FD_ss]
-#     xii_bs <- ggImgplot2(vals_bs, zlim = c(-0.35, 0.35))
-#     plot_fun(xii_bs, fname_start = paste0(fname_start, "Between_"), fname_end = fname_end)
-#     xii_bs2 <- newdata_xifti(xii_bs, rowMeans(as.matrix(xii_bs)[,inds_nonDMN]))
-#     plot_fun(xii_bs2, titles = "nonDMN", fnames="nonDMN", fname_start = paste0(fname_start, "Between_"), fname_end = fname_end, zlim = c(-0.35, 0.35))
-#
-#   }
-# }
-#
-#

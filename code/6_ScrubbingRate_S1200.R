@@ -13,7 +13,6 @@ setwd(dir_slate)
 x <- readRDS(file.path(dir_results, "results/3_AggFD/withS1200_AggFD.rds"))
 
 ## Compute the number of time points exceeding modFD = 0.2mm (Note: this does NOT include DVARS)
-
 x1 <- x
 x1[is.na(x1)] <- Inf
 z <- (1185 - rowSums(x1 > .2)) * .72 / 60

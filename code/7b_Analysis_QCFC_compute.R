@@ -17,7 +17,7 @@ setwd(dir_slate)
 
 #full HCP
 x <- readRDS(file.path(dir_slate, "results/3_AggFD/withS1200_AggFD.rds"))
-meanFD <- rowMeans(x, na.rm = FALSE) #sessions with any NA values will be set to NA (affects 240 sessions, 217 of which are NA for all time points)
+meanFD <- rowMeans(x, na.rm = FALSE) #sessions with any NA values will be set to NA
 meanFD <- matrix(meanFD, nrow = 4) #runs x subjects
 
 #remove sessions with less than 1 minute of unflagged scan duration (~83 volumes) for FD2+
@@ -30,16 +30,11 @@ meanFD[remove] <- NA #set these sessions to NA
 
 #how many subjects missing sessions?
 table(colSums(is.na(meanFD)))
-# 0   1   2   3   4
-# 938  52  86  11  26
-# before excluding sessions with less than 1 min:
-#    0    1    2    3    4
-# 1004   20   65    6   18
 
 #get subject names
 tmp <- readRDS(file.path(dir_slate, 'results', '4_AggFC', "withS1200_withDVARS_FC_FIX_Base_first14.22mins.rds"))
 subjects <- dimnames(tmp)[[2]]
-runs <- dimnames(tmp)[[1]] #"test_LR1" "test_LR2" "test_RL1" "test_RL2"
+runs <- dimnames(tmp)[[1]] 
 
 meanFD_df <- as.data.frame(t(meanFD), row.names = subjects)
 names(meanFD_df) <- runs
@@ -52,17 +47,7 @@ meanFD_df <- reshape2::melt(meanFD_df, id.vars='subject', variable.name = 'run',
 meanFD_all <- colMeans(meanFD, na.rm=TRUE) #mean of each subject, across visits
 meanFD_var <- var(meanFD_all, na.rm=TRUE) #var over subjects
 
-#b) group subjects by their average motion level
-# meanFD_qrt <- quantile(meanFD_all, c(0.25,0.5,0.75), na.rm=TRUE)
-# hist(meanFD_all, breaks=30)
-# abline(v = meanFD_qrt, col='red', lwd=2)
-# meanFD_grp <- ifelse(meanFD_all < meanFD_qrt[1], 1,
-#                      ifelse(meanFD_all < meanFD_qrt[2], 2,
-#                             ifelse(meanFD_all < meanFD_qrt[3], 3, 4)))
-# meanFD_hiFD <- meanFD_grp %in% 3:4
-# meanFD_loFD <- meanFD_grp %in% 1:2
-
-#c) sanity check: compute mean and variance of meanFD WITHIN subjects (use most extreme sessions from each subject)
+#b) sanity check: compute mean and variance of meanFD WITHIN subjects (use most extreme sessions from each subject)
 meanFD_min <- apply(meanFD, 2, min, na.rm=TRUE); meanFD_min[is.infinite(meanFD_min)] <- NA #this happens when a subject is missing
 meanFD_max <- apply(meanFD, 2, max, na.rm=TRUE); meanFD_max[is.infinite(meanFD_max)] <- NA #this happens when a subject is missing
 meanFD_change <- meanFD_max - meanFD_min
@@ -71,7 +56,7 @@ meanFD_ismax <- (meanFD == matrix(rep(meanFD_max, each = 4), nrow=4))
 meanFD_var_within <- 0.5*(meanFD_max - meanFD_min)^2 #var of each subject, across most extreme visits
 meanFD_var_within0 <- apply(meanFD, 2, var, na.rm=TRUE) #var of each subject, across all visits
 
-#d) identify subjects with high variance of motion (similar to population variance)
+#c) identify subjects with high variance of motion (similar to population variance)
 plot(meanFD_var_within0, meanFD_var_within,
      xlab='Within-subject Variance across all Visits',
      ylab='Within-subject Variance across extreme Visits',
@@ -121,7 +106,8 @@ dev.off()
 FD_vec <- c(meanFD)
 FD_vec_std <- scale(FD_vec) #normalize to mean 0, var 1
 
-#for partitioned QC-FC: separate the within-subject and between-subject effects
+#for partitioned QC-FC: separate the within-subject and between-subject effects:
+
 #between-subject effects
 x_i_bar <- colMeans(meanFD, na.rm=TRUE) #mean of each subject, across visits
 x_bar <- mean(meanFD, na.rm=TRUE) #overall mean
@@ -151,8 +137,7 @@ for (bb in 1:nB) {
 
   QCFC_naive_df <- QCFC_adj_df <- QCFC_within_df <- NULL
 
-  #loop over scrubbing levels (None, FD5, FD2, FD2+)
-  #for (ss in c(1,2,5,6)) {
+  #loop over scrubbing levels
   for (ss in 1:6) {
     pfname_ss <- scrubNames[ss] #partial file name
     scrub_ss <- FD_levels2[ss]
@@ -169,12 +154,6 @@ for (bb in 1:nB) {
 
     ### NAIVE
 
-    # #for each edge, compute cor(FD, FC) across all sessions the traditional way
-    # QCFC0_bs <- apply(FC_bs, 3, function(y){
-    #   FC_vec <- fishZ(c(y)) #vectorize 4xnSess matrix
-    #   cor(FC_vec, FD_vec, use = 'complete')
-    # })
-
     #compute cor(FD, FC) using linear regression (this is EQUAL to cor(x,y) since SD(x)=SD(y)=1)
     QCFC_bs <- apply(FC_bs, 3, function(y){
       FC_vec <- fishZ(c(y)) #vectorize 4xnSess matrix, vector is grouped by subject
@@ -188,7 +167,6 @@ for (bb in 1:nB) {
                                    base = baseName,
                                    scrub = scrub_ss)
     QCFC_naive_df <- rbind(QCFC_naive_df, QCFC_naive_df_bs)
-    #all.equal(QCFC0_bs, QCFC_bs) #TRUE (pearson correlation = SLR regression coefficient)
 
     ### PARTITIONED
 
@@ -242,12 +220,10 @@ for (bb in 1:nB) {
     QCFC_within_bs <- apply(FC_bs_change, 2, function(x){
       cor_all <- cor(x, meanFD_change, use = 'complete')
       cor_hivar <- cor(x[meanFD_hivar], meanFD_change[meanFD_hivar], use = 'complete')
-      #cor_hivar_hiFD <- cor(x[meanFD_hivar & meanFD_hiFD], meanFD_change[meanFD_hivar & meanFD_hiFD], use = 'complete')
-      #cor_hivar_loFD <- cor(x[meanFD_hivar & meanFD_loFD], meanFD_change[meanFD_hivar & meanFD_loFD], use = 'complete')
-      return(c(cor_all, cor_hivar)) #, cor_hivar_hiFD, cor_hivar_loFD))
+      return(c(cor_all, cor_hivar)) 
     })
     QCFC_within_df_bs <- as.data.frame(t(QCFC_within_bs))
-    names(QCFC_within_df_bs) <- c('all','hivar') #,'hivar_hiFD','hivar_loFD')
+    names(QCFC_within_df_bs) <- c('all','hivar') 
     QCFC_within_df_bs$base <- baseName
     QCFC_within_df_bs$scrub <- scrub_ss
     QCFC_within_df <- rbind(QCFC_within_df, QCFC_within_df_bs)
@@ -258,4 +234,3 @@ for (bb in 1:nB) {
        file = file.path(dir_github, 'results', '7_QCFC', paste0('QCFC_df_',baseName,'.RData')))
 
 } #end loop over base denoising methods
-

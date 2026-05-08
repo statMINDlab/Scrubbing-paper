@@ -79,11 +79,6 @@ for (with_S1200 in c(TRUE, FALSE)) {
     if (ncol(cii0) != 1200) { next }
     cii0 <- t(cii0)[seq(nDrop+1, hcp_T),]
     cii_mean <- mean(cii0)
-    #cii_mode <- fMRIscrub:::Mode(as.vector(cii))
-    #cii_mode100 <- fMRIscrub:::Mode(round(as.vector(cii)/100)*100)
-
-    #nreg <- as.matrix(rep(1, hcp_T - nDrop))
-    #cii <- nuisance_regression(cii0, nreg)
 
     # Compute DVARS for each session subset time. (The dual threshold will differ)
     get_DVARS <- function(nT_mm){

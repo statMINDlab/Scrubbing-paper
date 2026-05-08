@@ -9,7 +9,7 @@
 ## -----------------------------------------------------------------------------
 source("0_SharedCode.R")
 
-source(file.path(dir_github, "code", "FC_vis_funs.R")) #tools and functions for FC matrix visualization
+source(file.path(dir_github, "code", "FC_vis_funs.R")) 
 
 networklabels <- FALSE
 

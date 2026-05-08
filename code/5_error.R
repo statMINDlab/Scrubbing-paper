@@ -36,7 +36,6 @@ for (do_plus in c(FALSE, TRUE)) {
 
     # Get the retest estimates to use for the ground truth
     # four retest sessions x  42 subjects x 90K connections
-    #FC_gt <- readRDS(file.path(dir_Agg, paste0(dvprefix, "FC_", baseName, "_FD___og_nfc_l4___0.2_first14.22mins_plus.rds")))
     FC_gt <- readRDS(file.path(dir_Agg, paste0(dvprefix, "FC_", baseName, "_FD___og_nfc_l4___0.2_first14.22mins.rds")))
     FC_gt[] <- psych::fisherz(FC_gt)
     stopifnot(all(dimnames(FC_gt)[[1]] == visits_RT))
@@ -54,7 +53,6 @@ for (do_plus in c(FALSE, TRUE)) {
     if (weights) {
       # get weights (# unflagged volumes per session)
       flags <- readRDS(file.path(dir_slate, 'results/5_flags', 'withDVARS_flags.rds'))
-      #unflagged <- !flags[,,,"first_14.22_mins","FD___og_nfc_l4___0.2",baseName,"FDplus"]
       unflagged <- !flags[,,,"first_14.22_mins","FD___og_nfc_l4___0.2",baseName,"FD"]
       A_sessions <- dimnames(FC_gt$A)[[1]] #which runs
       B_sessions <- dimnames(FC_gt$B)[[1]] #which runs
@@ -93,11 +91,7 @@ for (do_plus in c(FALSE, TRUE)) {
       
       abs_FC_over_subj <- abs(FC_over_subj)
       print(mean(abs_FC_over_subj))
-      # P36: 0.178272
-      # FIX+GSR: 0.1131559
       print(median(abs_FC_over_subj))
-      # P36: 0.1596193
-      # FIX+GSR: 0.08812263
       
       saveRDS(FC_over_subj, file.path(dir_github, 'results', '5_error', paste0('FCgt_over_subj_',baseName,'.rds')))
     }
@@ -126,7 +120,7 @@ for (do_plus in c(FALSE, TRUE)) {
 
         unflagged_A <- unflagged[A_sessions,,]
         unflagged_B <- unflagged[B_sessions,,]
-        A_weights <- apply(unflagged_A, c(1,2), sum, na.rm=TRUE) #keep session and subject names
+        A_weights <- apply(unflagged_A, c(1,2), sum, na.rm=TRUE) 
         B_weights <- apply(unflagged_B, c(1,2), sum, na.rm=TRUE)
 
         FC_weighted <- list(A = matrix(NA, dim(FC)[2], dim(FC)[3], dimnames = list(dimnames(FC)[[2]])),
@@ -144,12 +138,6 @@ for (do_plus in c(FALSE, TRUE)) {
         }
 
         rm(unflagged, unflagged_A, unflagged_B, A_weights, B_weights)
-
-        # #average over first X mins from LR and from RL
-        # FC <- list(
-        #   A = (FC[c("test_LR1"),,,,] + FC[c("test_RL1"),,,,])/2,
-        #   B = (FC[c("test_LR2"),,,,] + FC[c("test_RL2"),,,,])/2
-        # )
 
         FC$A <- (FC_weighted$A - FC_gt$A)
         FC$B <- (FC_weighted$B - FC_gt$B)

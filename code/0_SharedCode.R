@@ -107,16 +107,16 @@ if (!file.exists(subjects_S1200_fname)) {
 subjects_S1200 <- readRDS(subjects_S1200_fname)
 
 # Packages
-library(fMRIscrub)
+library(fMRIscrub) #version 0.14.5
 stopifnot(utils::packageVersion("fMRIscrub") >= "0.14.5")
-library(ciftiTools)
+library(ciftiTools) #version 0.16.1
 stopifnot(utils::packageVersion("ciftiTools") >= "0.14.0")
 ciftiTools.setOption("wb_path", wb_path)
-library(fMRItools)
-library(RColorBrewer)
-library(ggplot2)
-library(scales)
-library(ggthemes)
+library(fMRItools) #version 0.4.7
+library(RColorBrewer) #version 1.1.3
+library(ggplot2) #version 4.0.1
+library(scales) #version 1.4.0
+library(ggthemes) #version 5.1.0
 
 hcp_TR <- .72
 hcp_T <- 1200

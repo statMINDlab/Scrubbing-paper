@@ -9,13 +9,12 @@
 ## ---------------------------------------------------------------------------
 source("code/0_SharedCode.R")
 
-library(dplyr)
-library(tidyr)
-library(ggthemes)
-library(cowplot)
-library(ggpubr) #geom_bracket
-library(patchwork)
-library(ggpattern)
+library(dplyr) #version 1.1.4
+library(tidyr) #version 1.3.1
+library(cowplot) #version 1.1.3
+library(ggpubr) #geom_bracket, version 0.6.0
+library(patchwork) #version 1.2.0
+library(ggpattern) #version 1.2.1
 
 #toggle for re-making plots
 networklabels <- FALSE
@@ -50,7 +49,7 @@ format_FD <- function(x){ factor(x, levels = FD_levels, labels = FD_levels_long)
 
 #compute scrubbing rate from flags
 flags <- readRDS(file = file.path(dir_github,'results','5_flags','flags.rds'))
-flags <- flags[,,,c("None", "FD5", "FD2", "FD2+")] #remove FD4 and FD3
+flags <- flags[,,,c("None", "FD5", "FD2", "FD2+")] 
 flags_avg <- apply(flags, c(1,2,4), mean, na.rm=TRUE) #average over time points -- proportion of vol's scrubbed
 flags_avg <- apply(flags_avg, 2:3, mean, na.rm=TRUE) #average over sessions
 names(dimnames(flags_avg)) <- c('Subject', 'FD')
@@ -72,7 +71,6 @@ flags_df_mean <- flags_df %>%
 pdf(file.path(dir_github, 'plots', 'scrubRate.pdf'), height=5, width=3.5)
 print(ggplot() +
         geom_line(data = subset(flags_df, FD != "None"), aes(FD, numFlag, group = Subject, linetype = group), color = 'gray80', linewidth = 0.5, show.legend = FALSE) +
-        #geom_point(data = flags_df_highmotion, aes(x = FD, y = numFlag, group = subject, color = FD), size = 1) +
         geom_line(data = flags_df_mean, aes(x = FD, y = mean, group = group, linetype = group), color = 'black', linewidth = 0.8) +
         geom_point(data = flags_df_mean, aes(x = FD, y = mean, color = FD), size = 1.5) +
         geom_text(data = flags_df_mean, aes(x = FD, y = mean, label = mean_label), vjust = -0.6, hjust = 1.2, size = 2.5) +
@@ -128,11 +126,9 @@ for (bb in 2:nB) {
               mean_pct_loss = mean(pct_loss_Teff),
               mean_pct_loss_label = paste0(round(mean(pct_loss_Teff)*100),'%'))
 
-  #make plot
   pdf(file.path(dir_github, 'plots', paste0("scrubRateEff_", base, '.pdf')), height=4, width=3.6)
   print(ggplot() +
           geom_line(data = subset(T_eff_sum, FD != "None"), aes(FD, pct_loss_Teff, group = subject, linetype = group), color = 'gray80', linewidth = 0.5, show.legend = FALSE) +
-          #geom_point(data = flags_df_highmotion, aes(x = FD, y = numFlag, group = subject, color = FD), size = 1) +
           geom_line(data = T_eff_sum_mean, aes(x = FD, y = mean_pct_loss, group = group, linetype = group), color = 'black', linewidth = 0.8) +
           geom_point(data = T_eff_sum_mean, aes(x = FD, y = mean_pct_loss, color = FD), size = 1.5) +
           geom_text(data = T_eff_sum_mean, aes(x = FD, y = mean_pct_loss, label = mean_pct_loss_label), vjust = -0.4, hjust = 1.2, size = 3) +
@@ -148,7 +144,6 @@ for (bb in 2:nB) {
                 legend.key.height = unit(0.5, "cm"),
                 axis.text.x=element_text(angle=45,hjust=1),
                 axis.title.x = element_blank()) +
-          #ggtitle('Effective Censoring Rate')) + # Hidden
           ylab("% Reduction")) # % Loss in Effective Scan Duration
   dev.off()
 
@@ -167,7 +162,7 @@ for (bb in 2:nB) {
   #ungrouped
   pdf(file.path(dir_github, "plots", "MAE", base, "MAE_duration.pdf"), height=4, width=4.5)
   p_mae_duration[[bb]] <- ggplot(filter(MAE_edge_summ, group=='all'), aes(x=Duration, y=sqrt(MSE))) +
-      geom_line(aes(group=FD, color=FD)) + geom_point(aes(color=FD)) + # removed from geom_point: linewidth=2 (not a valid param for geom_point)
+      geom_line(aes(group=FD, color=FD)) + geom_point(aes(color=FD)) + 
       scale_color_manual('Censoring\nMethod', values = myCols) +
       scale_x_continuous(breaks=c(5,10,20,30), limits=c(3,30)) +
       xlab("Scan Duration (min)") +
@@ -183,7 +178,7 @@ for (bb in 2:nB) {
   #grouped
   pdf(file.path(dir_github, "plots", "MAE", base, "MAE_duration_bymotion.pdf"), height=4, width=5)
   print(ggplot(filter(MAE_edge_summ, group != 'all'), aes(x=Duration, y=sqrt(MSE))) +
-          geom_line(aes(group=FD, color=FD)) + geom_point(aes(color=FD)) + # removed from geom_point: linewidth=2
+          geom_line(aes(group=FD, color=FD)) + geom_point(aes(color=FD)) + 
           scale_color_manual('Censoring\nMethod', values = myCols) +
           scale_x_continuous(breaks=c(5,10,20,30), limits=c(3,30)) +
           xlab("Scan Duration (min)") +
@@ -267,7 +262,7 @@ for (bb in 2:nB) {
   pvals_sig_df$Duration2 <- format_duration2(pvals_sig_df$Duration)
   pvals_sig_df <- filter(pvals_sig_df, pvalue < 0.05)
   pvals_sig_df$Star <- ifelse(pvals_sig_df$pvalue < 0.001, '***', ifelse(pvals_sig_df$pvalue < 0.01, '**', '*'))
-  pvals_sig_df0 <- filter(pvals_sig_df, Comparison=="None-Lenient") #not shown on plot
+  pvals_sig_df0 <- filter(pvals_sig_df, Comparison=="None-Lenient") 
   pvals_sig_df1 <- filter(pvals_sig_df, Comparison=="Lenient-Stringent")
   pvals_sig_df2 <- filter(pvals_sig_df, Comparison=="Stringent-Expanded")
 
@@ -336,7 +331,7 @@ for (bb in 2:nB) {
   ymax <- max(MAE_diff_summ$rMSE_delta)*1.25
   pdf(file.path(dir_github, "plots", "MAE", base, 'dMAE_duration.pdf'), height=4, width=4.5)
   p_dmae_duration[[bb]] <- ggplot(MAE_diff_summ, aes(x=Duration, y=rMSE_delta)) +
-          geom_line(aes(group=FD, color=FD)) + geom_point(aes(color=FD)) + # removed from geom_point: linewidth=2
+          geom_line(aes(group=FD, color=FD)) + geom_point(aes(color=FD)) + 
           scale_color_manual('Censoring\nMethod', values = myCols[-1]) +
           scale_x_continuous(breaks=c(5,10,20,30), limits=c(3,30)) +
           scale_y_continuous(labels = scales::percent, limits=c(0,ymax)) +
@@ -356,7 +351,7 @@ for (bb in 2:nB) {
   ymax <- max(MAE_diff_summ_grouped$rMSE_delta)*1.25
   pdf(file.path(dir_github, "plots", "MAE", base, 'dMAE_duration_bymotion.pdf'), height=4, width=5)
   p_dmae_durbymot[[bb]] <- ggplot(MAE_diff_summ_grouped, aes(x=Duration, y=rMSE_delta)) +
-          geom_line(aes(group=FD, color=FD)) + geom_point(aes(color=FD)) + # rm: linewidth=2
+          geom_line(aes(group=FD, color=FD)) + geom_point(aes(color=FD)) + 
           scale_color_manual('Censoring\nMethod', values = myCols[-1]) +
           scale_x_continuous(breaks=c(5,10,20,30), limits=c(3,30)) +
           scale_y_continuous(labels = scales::percent) +
@@ -401,7 +396,7 @@ for (bb in 2:nB) {
     summarize(ymax = max(rMSE), FD = 'Lenient') #where to locate "legend" for blue dot
   print(ggplot(MAE_edge_illustration, aes(x=Duration, y=rMSE, color=FD, group=FD)) +
           geom_point() + geom_line(alpha = 0.5) +
-          geom_vline(data=MAE_minDur_edge_illustration, aes(xintercept = minDur, group=FD, color=FD), lty=2, alpha=0.5) + #minDur for each FD
+          geom_vline(data=MAE_minDur_edge_illustration, aes(xintercept = minDur, group=FD, color=FD), lty=2, alpha=0.5) + 
           geom_hline(data = MAE_minDur_edge_illustration, aes(yintercept = target)) +
           geom_point(data = filter(MAE_minDur_edge_illustration, FD=='Lenient'), x = 17.5, aes(y = target), color='black', fill='deepskyblue', size = 3, shape = 21) +
           geom_point(data = annotate_loc, aes(y = ymax-0.001), x=24, color='black', fill='deepskyblue', size = 3, shape = 21) +
@@ -428,7 +423,7 @@ for (bb in 2:nB) {
   pdf(file.path(dir_github, "plots", "MAE", base, 'durationChange_illustration_subjects.pdf'), height = 7, width = 5)
   print(ggplot(MAE_subj_illustration, aes(x=Duration, y=rMSE, color=FD, group=FD)) +
           geom_point() + geom_line(alpha = 0.5) +
-          geom_vline(data= MAE_minDur_subj_illustration, aes(xintercept = minDur, group=FD, color=FD), lty=2, alpha=0.5) + #minDur for each FD
+          geom_vline(data= MAE_minDur_subj_illustration, aes(xintercept = minDur, group=FD, color=FD), lty=2, alpha=0.5) + 
           geom_hline(data = MAE_minDur_subj_illustration, aes(yintercept = target)) +
           geom_point(data = filter(MAE_minDur_subj_illustration, FD=='Lenient'), x = 17.5, aes(y = target), color='black', fill='deepskyblue', size = 3, shape = 21) +
           geom_point(data = annotate_loc, aes(y = ymax-0.001), x=24, color='black', fill='deepskyblue', size = 3, shape = 21) +
@@ -504,7 +499,7 @@ for (bb in 2:nB) {
   bias_summ <- bias_subj %>% group_by(Duration, FD, group) %>% summarize(bias_mean = mean(bias))
   pdf(file.path(dir_github, "plots", "MAE", base, 'bias_duration.pdf'), height=4, width=5)
   print(ggplot(bias_summ, aes(x=Duration, y=bias_mean)) +
-          geom_line(aes(group=FD, color=FD)) + geom_point(aes(color=FD)) + # linewidth=2
+          geom_line(aes(group=FD, color=FD)) + geom_point(aes(color=FD)) + 
           scale_color_manual('Censoring\nMethod', values = myCols) +
           scale_x_continuous(breaks=c(5,10,20,30), limits=c(3,30)) +
           scale_y_continuous(expand = c(0.02,0.02)) +
@@ -538,12 +533,8 @@ for (bb in 2:nB) {
 
     ggplot(filter(df, FD != "None"),
            aes(x = FD, y = baselineSDeff_mean_delta)) +
-      #geom_line(aes(group=Subject, linetype=group), alpha=0.1) +
-      #geom_boxplot_pattern(aes(group = interaction(group, FD), pattern = group, fill = FD),  pattern_spacing = 0.01, outliers = FALSE) +
       geom_boxplot(aes(group = FD, fill = FD), outliers = FALSE) +
       scale_fill_manual(values = colors, guide = 'none') +
-      #scale_pattern_manual(values = c('none','stripe')) +
-      #geom_point(size=2) +
       ylab("% Change") + # Change in Noise vs. No Censoring
       ggtitle(title) +
       cowplot::theme_cowplot() +
@@ -552,11 +543,7 @@ for (bb in 2:nB) {
       facet_grid(. ~ group) +
       theme(legend.position = 'none',
             plot.title = element_blank(), # for Figure
-            # plot.title = element_text(hjust = 0.5), # for Figure
             strip.text = element_text(face = "plain"), # for Figure
-            # strip.text = element_text(face = 'bold') # for Figure
-            #legend.position = c(0.05,0.1),
-            #legend.title = element_blank(),
             axis.text.x=element_text(angle=45,hjust=1),
             axis.title.x = element_blank(),
             strip.background = element_blank())
@@ -615,8 +602,6 @@ for (bb in 2:nB) {
           geom_text(data = bottom_labels, aes(x = FD, y = mean_delta, label = mean_delta_label), vjust = bottom_vnudge, hjust = bottom_hnudge, size = 2.80) +
           scale_linetype_manual(name = NULL, values = c("Above-Average Motion" = "solid", "Below-Average Motion" = "dashed")) +
           scale_color_manual(values = myCols[-1], guide = 'none') +
-          #scale_x_discrete(expand=expansion(add=c(.25, .15))) +
-          #scale_y_continuous(breaks = c(0,0.2,0.4,0.6), limits = c(0,0.66), labels = scales::percent) +
           scale_y_continuous(limits = c(-0.35, 0.15), labels = scales::percent) +
           cowplot::theme_cowplot() +
           theme(legend.position = c(0.02, 0.02),

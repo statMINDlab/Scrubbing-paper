@@ -10,7 +10,7 @@
 source("0_SharedCode.R")
 setwd(dir_slate)
 
-library(dplyr)
+library(dplyr) #version 1.1.4
 
 with_S1200 <- FALSE
 subjects <- if (with_S1200) { subjects_S1200 } else { subjects_RT }
@@ -95,42 +95,33 @@ visits_gt <- list(
 
 # Array of number scrubbed
 q <- lapply(visits_gt, function (z){
-  colSums(nScrub[z,,"first_14.22_mins","FD___og_nfc_l4___0.2","FD"]) }) #using FD2 ground truth
+  colSums(nScrub[z,,"first_14.22_mins","FD___og_nfc_l4___0.2","FD"]) }) 
+
 # Time remaining per subject after scrubbing
 nT_postScrub_gt <- do.call(rbind, lapply(q, function(z){ ((nT_1sess*6)-z)*hcp_TR/60 }))
 
 ### Drop subjects with insufficient data -----
 # (require >50 minutes in both GT partitionings)
 sub_drop <- nT_postScrub_gt[,apply(nT_postScrub_gt < 50, 2, any), drop = FALSE]
-colnames(sub_drop) # 103818, 151526, 175439
+colnames(sub_drop) 
 
 # Drop subjects with insufficient data from `FDstats`
 FDstats$drop <- FDstats$Subject %in% colnames(sub_drop)
 
 ### High vs low movers. -----
-# Two options: meanFD and ScrubRate.  Based on Motion.pdf plot, ScrubRate seems to distinguish better.
-med_meanFD <- median(subset(FDstats, !drop)$FD_mean) #0.1367949
-avg_meanFD <- mean(subset(FDstats, !drop)$FD_mean) #0.1455963
-#FDstats$motion <- (FDstats$FD_mean > med_meanFD)
+med_meanFD <- median(subset(FDstats, !drop)$FD_mean) 
+avg_meanFD <- mean(subset(FDstats, !drop)$FD_mean) 
 # Defined by rate of scrubbing with FD2.
-med_ScrubRate <- median(subset(FDstats, !drop)$FD2_rate) #0.1593354
-avg_ScrubRate <- mean(subset(FDstats, !drop)$FD2_rate) #0.179242
+med_ScrubRate <- median(subset(FDstats, !drop)$FD2_rate) 
+avg_ScrubRate <- mean(subset(FDstats, !drop)$FD2_rate)
 FDstats$motion <- (FDstats$FD2_rate > avg_ScrubRate)
 
 FDstats$motion <- factor(
   ifelse(FDstats$drop, "Drop", ifelse(FDstats$motion, "High Motion", "Low Motion")),
   levels=c("Low Motion", "High Motion", "Drop")
 )
-# FDstats$motion <- factor(FDstats$motion,
-#                          levels = c("Low Motion", "High Motion", "Drop"),
-#                          labels = c('Below-Average Motion', 'Above-Average Motion', 'Drop'))
-# FDstats$motion2 <- factor(
-#   ifelse(FDstats$drop, "Drop", ifelse(FDstats$motion2, "High Motion", "Low Motion")),
-#   levels=c("Low Motion", "High Motion", "Drop")
-# )
+
 print(table(FDstats$motion))
-#  Low Motion High Motion        Drop
-#          21          18           3
 
 FDstats <- arrange(FDstats, FD2_rate)
 FDstats$Subject <- factor(FDstats$Subject, levels=FDstats$Subject)
@@ -152,7 +143,7 @@ saveRDS(FDstats, file.path(dir_slate, "results/6_scrubRate/AggFD_withSubjectSpli
 saveRDS(FDstats, file.path(dir_github, "results/6_scrubRate/AggFD_withSubjectSplit.rds"))
 
 #mean FD scrubbing rate, and exclusion flag for each HCP retest subject
-sub_drop <- as.numeric(as.character(FDstats$Subject[FDstats$drop])) #these 4 subjects have too little data for "ground truth"
+sub_drop <- as.numeric(as.character(FDstats$Subject[FDstats$drop])) 
 sub_himo <- as.numeric(as.character(FDstats$Subject[FDstats$motion == "High Motion"]))
 sub_lomo <- as.numeric(as.character(FDstats$Subject[FDstats$motion == "Low Motion"]))
 save(sub_drop, sub_himo, sub_lomo, file = file.path(dir_github,'data','subjects_retest.RData'))
@@ -161,14 +152,12 @@ save(sub_drop, sub_himo, sub_lomo, file = file.path(dir_github,'data','subjects_
 
 ### Time remaining in GT partitions per subject -----
 
-# Make `arr_gtr`, an array of time remaining per subject in the 2 ground truth
-#   partitions.
+# Make `arr_gtr`, an array of time remaining per subject in the 2 ground truth partitions.
 q <- lapply(visits_gt, function(z){ colSums(nScrub[z,as.character(FDstats$Subject),,,]) })
 q$A <- abind::abind(A=q$A, along=5)
 q$B <- abind::abind(B=q$B, along=5)
 q <- abind::abind(q$A, q$B, along=5)
-# sub_alt_order <- names(sort(rowMeans(
-#   q[,"first_14.22_mins","FD___og_nfc_l4___0.2","FDplus",])))
+
 # time (min.) remaining after scrubbing
 arr_gtr <- (q*(-1) + rep(nT_seq*6, each=prod(dim(q)[seq(1)])) )*hcp_TR/60
 arr_gtr <- arr_gtr[,"first_14.22_mins",,,]
@@ -253,7 +242,6 @@ gridExtra::grid.arrange(plt1, plt2, nrow=1)
 dev.off()
 
 ## Based on the plot above, will use avg_ScrubRate (0.154) as the threshold for high/low movers.
-## For the full HCP, we can probably just use 0.15, but should visualize the distribution
 
 # Data remaining after scrubbing -----
 # data collected vs data after scrubbing
@@ -262,10 +250,9 @@ dev.off()
 # visit 2: RL --> LR (for most subjects)
 dcas_df_agg <- NULL
 for (tt in seq(length(nT_seq)*2)) {
-  use_B <- tt > length(nT_seq) #use second session (RL)?
+  use_B <- tt > length(nT_seq) 
   tt_B <- if (use_B) { tt - length(nT_seq) } else { NULL }
   nT_tt <- if (use_B) { nT_seq[tt_B] } else { nT_seq[tt] }
-  # (42) subjects by (nT_tt) timepoints matrix of FD values from LR1+LR2 concat.
   agFD_tt <- if (use_B) {
     aggFD[idx_RL1,seq(nT_seq[tt_B])] #first X volumes of RL
   } else {
@@ -310,64 +297,3 @@ ggplot(
 dev.off()
 
 saveRDS(dcas_df_agg, file = file.path(dir_slate, "results/6_scrubRate/AggFD_byDuration.rds"))
-
-# OLD -----
-
-# [OLD code]
-# slen <- dimnames(qt)[[3]]
-# pdf(file.path(dir_plots, "ScrubbingRate.pdf"), width=9, height=5)
-# for (ss in seq(length(slen))) {
-#   q_gg <- as.data.frame.table(arr_gtr[,sub_order,slen[ss],,], responseName="scrub_pct")
-#   q_gg$visit <- factor(ifelse(grepl("retest", q_gg$visit), "Retest", "Test"), levels=c("Test", "Retest"))
-#   levels(q_gg$FD_cutoff) <- gsub(".*_", "", levels(q_gg$FD_cutoff))
-#
-#   plt <- ggplot(q_gg, aes(x=subject, y=scrub_pct*100)) +
-#     geom_point(aes(color=FD_cutoff, shape=FD_type)) +
-#     geom_hline(yintercept=50, lty=2) +
-#     geom_hline(yintercept=pct_need, lty=2) +
-#     geom_vline(xintercept = 1:42+0.5, color='lightgray') +
-#     scale_color_manual(values = c("#e6ab02", color_FD)) +
-#     scale_shape_manual(values = c(16, 4)) +
-#     ylab('Percent of Volumes Scrubbed') + xlab('Subjects') +
-#     scale_y_continuous(breaks=seq(0,100,10)) +
-#     ggthemes::theme_few() + facet_grid(.~visit) +
-#     scale_y_continuous(expand=c(0,5)) +
-#     theme(axis.text.x = element_text(angle = 45, size=6, hjust=1)) +
-#     ggtitle(paste0("Scrubbing rates for ", gsub("_" ," ", slen[ss])))
-#   print(plt)
-# }
-# dev.off()
-
-# slen <- dimnames(qt)[[3]]
-# pdf(file.path(dir_plots, "ScrubbingRate_mean.pdf"), width=9, height=5)
-# for (ss in seq(length(slen))) {
-#
-#   # TO DO
-#   #arr_gt <- lapply(visits_gt, function(z){ colSums(q[z,,"first_14_mins","FD___og_nfc_l4___0.2","FDplus"]) })
-#
-#   q_gg <- abind::abind(
-#     test=colMeans(qty[!grepl("retest", dimnames(qty)[[1]]),sub_order,,,]),
-#     retest=colMeans(qty[grepl("retest", dimnames(qty)[[1]]),sub_order,,,]),
-#     along=5, use.first.dimnames = TRUE
-#   )
-#   q_gg <- aperm(q_gg, c(5,1,2,3,4))
-#   names(dimnames(q_gg)) <- names(dimnames(qty))
-#   q_gg[is.nan(q_gg)] <- 1 # why?
-#   q_gg <- as.data.frame.table(q_gg[,,slen[ss],,], responseName="scrub_pct")
-#   q_gg$visit <- factor(ifelse(grepl("retest", q_gg$visit), "Retest", "Test"), levels=c("Test", "Retest"))
-#   levels(q_gg$FD_cutoff) <- gsub(".*_", "", levels(q_gg$FD_cutoff))
-#
-#   plt <- ggplot(q_gg, aes(x=subject, y=scrub_pct*100)) +
-#     geom_point(aes(color=FD_cutoff, shape=FD_type)) +
-#     geom_hline(yintercept=50, lty=2) + geom_vline(xintercept = 1:42+0.5, color='lightgray') +
-#     scale_color_manual(values = color_FD) +
-#     scale_shape_manual(values = c(16, 4)) +
-#     ylab('Percent of Volumes Scrubbed') + xlab('Subjects') +
-#     scale_y_continuous(breaks=seq(0,100,10)) +
-#     ggthemes::theme_few() + facet_grid(.~visit) +
-#     scale_y_continuous(expand=c(0,5)) +
-#     theme(axis.text.x = element_text(angle = 45, size=6, hjust=1)) +
-#     ggtitle(paste0("Scrubbing rates for ", gsub("_" ," ", slen[ss])))
-#   print(plt)
-# }
-# dev.off()

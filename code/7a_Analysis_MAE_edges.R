@@ -9,9 +9,9 @@
 ## ---------------------------------------------------------------------------
 source("code/0_SharedCode.R")
 
-library(dplyr)
+library(dplyr) #version 1.1.4
 
-source(file.path(dir_github, "code", "FC_vis_funs.R")) #tools and functions for FC matrix visualization
+source(file.path(dir_github, "code", "FC_vis_funs.R"))
 
 networklabels <- FALSE
 
@@ -61,7 +61,7 @@ for (base in baseNames) {
   for(ss in FD_levels_long[2:4]){
     fname_ss <- paste0('dMAE_', ss, '.png')
     png(file.path(dir_github, "plots", "MAE", base, fname_ss), width=1000, height=900, res=200)
-    print(plot_FC_mat(df = filter(MAE_edge, group=='all', Duration=='first_5_mins'), #T = 10 min
+    print(plot_FC_mat(df = filter(MAE_edge, group=='all', Duration=='first_5_mins'), 
                       val_name = 'rMSE_delta',
                       legTitle = '% Change\nin FC Error',
                       title = "% Change vs. No Censoring",
@@ -114,22 +114,6 @@ for (base in baseNames) {
     summarize(min = min(Duration_change_pct, na.rm = TRUE),
               max = max(Duration_change_pct, na.rm = TRUE),
               over100 = mean(Duration_change_pct > 100, na.rm = TRUE))
-  # P36: 
-  # FD        group   min   max over100
-  #   1 Stringent all   -77.1  500.  0.0783
-  # 2 Stringent himo  -77.1  499.  0.102 
-  # 3 Stringent lomo  -77.1  499.  0.0469
-  # 4 Expanded  all   -77.1  500.  0.135 
-  # 5 Expanded  himo  -77.1  500.  0.167 
-  # 6 Expanded  lomo  -77.1  500.  0.0956
-  # FIX:
-  #   FD        group   min   max over100
-  #   1 Stringent all   -77.1  491.  0.0441
-  # 2 Stringent himo  -77.1  487.  0.0776
-  # 3 Stringent lomo  -77.1  500.  0.0290
-  # 4 Expanded  all   -77.1  491.  0.151 
-  # 5 Expanded  himo  -77.1  499.  0.227 
-  # 6 Expanded  lomo  -77.1  490.  0.0749
   
 
   ##########################################################################
@@ -142,10 +126,9 @@ for (base in baseNames) {
   plot_baselineSD <- function(df, grp, colors, ylab){
     ggplot(filter(df, FD != "None", group==grp),
            aes(x = FD, y = baselineSDeff_mean_delta, fill = FD)) +
-      geom_boxplot(outliers = FALSE) + #, color = 'black') +
+      geom_boxplot(outliers = FALSE) + 
       scale_fill_manual(values = colors) +
-      #geom_point(size=2) +
-      scale_y_continuous(labels = scales::percent) +#, limits = ylimit) +
+      scale_y_continuous(labels = scales::percent) +
       ggtitle('Baseline Noise vs. No Censoring') + ylab(ylab) +
       cowplot::theme_cowplot() +
       theme(legend.position = "none",
@@ -157,9 +140,7 @@ for (base in baseNames) {
   baselineSD_edge$FD <- format_FD(baselineSD_edge$FD)
 
   pdf(file.path(dir_github, "plots", "MAE", base, "baselineSD_boxplot_eff_edge.pdf"), height=4, width=3)
-  #below-average movers
   print(plot_baselineSD(df = baselineSD_edge, grp = 'Below-Average Motion', colors=myCols[-1], ylab="Change vs. No Censoring\n(Below-Average Motion Subjects)"))
-  #above-average movers
   print(plot_baselineSD(df = baselineSD_edge, grp = 'Above-Average Motion', colors=myCols[-1], ylab="Change vs. No Censoring\n(Above-Average Motion Subjects)"))
   dev.off()
 
@@ -180,5 +161,3 @@ for (base in baseNames) {
     dev.off()
   }
 }
-
-

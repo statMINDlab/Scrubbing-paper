@@ -54,7 +54,6 @@ for (with_S1200 in c(TRUE, FALSE)) {
           FC_fname <- paste0(dvprefix, subject, "_v", visit + (!test)*2, "_", acquisition, plusName, ".rds")
           FC_fname <- file.path(dir_FC, baseName, FC_fname)
           cat("\t", basename(FC_fname), "\n")
-          #cat("\t", visits_RT[ifelse(ii%%8 == 0, 8, ii %%8)], "\n")
           if (!file.exists(FC_fname)) { warning("Missing file: ", FC_fname); next }
           FC <- readRDS(FC_fname) # a nested list: for each base denoising method and duration, contains FC values and flag
           

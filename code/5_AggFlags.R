@@ -48,7 +48,7 @@ aggFlags <- abind::abind(aggFlags, along=7)
 saveRDS(aggFlags, file.path(dir_slate, "results/5_flags", paste0(dvprefix, "flags.rds")))
 
 ## Plots comparing FD --------------------------------------------------------
-library(gridExtra)
+library(gridExtra) #version 2.3
 
 flags <- readRDS(file.path(dir_slate, 'results/5_flags/withDVARS_flags.rds'))
 
@@ -79,7 +79,6 @@ for (subject in subjects) {
 }
 
 #remove rows with missing ratios
-#quantiles <- quantile(flag_summary$ratio, probs = c(0.05, 0.5, 0.95), na.rm = TRUE)
 quantiles <- quantile(flag_summary$ratio, probs = c(0.05, 0.95), na.rm = TRUE)
 
 #find sessions closest to each quantile
@@ -89,11 +88,6 @@ pick_sessions <- rbind(pick_sessions,
                        flag_summary[which.min(abs(flag_summary$ratio - quantiles[3])), ])
 
 print(pick_sessions)
-
-# #set seed and select 5 subjects 
-# set.seed(1386)
-# rand_rows <- sample(1:nrow(iters), 5)
-# filtered_iters <- iters[rand_rows, ]
 
 #create filtered_iters to get the correct ScrubMeas file 
 sess <- pick_sessions$session
@@ -149,10 +143,8 @@ for (ii in seq(nrow(filtered_iters))){
   FD_data[[length(FD_data) + 1]] <- FD_df_ii
 }
 
-FD_df <- do.call(rbind, FD_data) #combine all 5 subjects into one dataframe
-FD_df <- FD_df[FD_df$FD_lf <= 1, ] #remove sessions where FD_lf > 1
-#FD2plus_lines <- data.frame(vol = unlist(FD_df$FD2plus_vols), subject = rep(FD_df$subject, lengths(FD_df$FD2plus_vols)))
-#FD_dots <- FD_df[!is.na(FD_df$FD2_vols), ]
+FD_df <- do.call(rbind, FD_data) 
+FD_df <- FD_df[FD_df$FD_lf <= 1, ] 
 
 FD_expanded_only <- FD_df[FD_df$FD2plus == TRUE & FD_df$FD2 == FALSE, ] #red dots, Expanded only 
 FD_both <- FD_df[FD_df$FD2 == TRUE & FD_df$FD2plus == TRUE, ] #green dots, Expanded and Stringent
@@ -161,11 +153,9 @@ FD_both <- FD_df[FD_df$FD2 == TRUE & FD_df$FD2plus == TRUE, ] #green dots, Expan
 pdf(file.path(dir_github, 'plots', 'FD2_vs_FD2+.pdf'), width=8, height=5)
 print(ggplot(FD_df, aes(x=vol,y=FD_lf)) +
   xlim(500,800) + 
-  #geom_vline(data=FD2plus_lines, aes(xintercept=vol, col="brown1"), size=0.1) +
   geom_hline(yintercept=0.2, col="darkgray") +
   geom_line(linewidth=0.4, color = 'grey40') + 
   geom_point(data=FD_expanded_only, aes(x=vol, y=FD_lf, fill="#b63545"), size=1.25, shape=4, color="#b63545", stroke=0.8) + 
-  #geom_point(data=FD_expanded_only, aes(x=vol, y=FD_lf, fill="#b63545"), size=1.25, shape=21, color="#b63545", stroke=0.3) + 
   geom_point(data=FD_both, aes(x=vol, y=FD_lf, fill="#b3ce91"), size=1.25, shape=21, color="#b3ce91", stroke=0.3) + 
   scale_fill_manual(values = c("#b63545" = "#b63545", "#b3ce91" = "#b3ce91")) +
   coord_cartesian(ylim = c(0, 0.7)) +

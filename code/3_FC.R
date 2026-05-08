@@ -56,7 +56,6 @@ for (with_S1200 in c(TRUE, FALSE)) {
     cor_mask <- upper.tri(diag(parc_res2))
 
     ## -------------------------------------------------------------------------
-    # Edit this function to control skipping iterations.
     skip_ii <- function(FC_fname) {
       # Will skip this iteration if the FC file(s) already exists.
       all(file.exists(FC_fname))
@@ -70,7 +69,6 @@ for (with_S1200 in c(TRUE, FALSE)) {
       if (nScrub < this_T - 2) {
         return(cor(this_cii[!this_flag,])[cor_mask])
       } else {
-        # Too many frames were scrubbed to calculate FC
         return(matrix(NA, nrow=parc_res2, ncol=parc_res2)[cor_mask])
       }
     }
@@ -117,10 +115,8 @@ for (with_S1200 in c(TRUE, FALSE)) {
           nuis0_tt <- cbind(nuis0_tt, scale(nuis_bb[vols_tt,]))
         }
 
-        # 107321_v2_LR: constant RPs. `scale` above makes `NA` values.
         nuis0_tt[,apply(is.na(nuis0_tt), 2, all)] <- 1
 
-        #if (nScrub+ncol(nuis0_tt) < T_tt - 2) {
         if (nScrub < T_tt - 2) {
           if (nScrub > 0) {
             # One-hot encode outlier flags
@@ -135,13 +131,11 @@ for (with_S1200 in c(TRUE, FALSE)) {
           cii2 <- nuisance_regression(cii[vols_tt,], nuis_tt)
 
         } else {
-          # Too many volumes / DOF removed
           spikes <- NULL
           cii2 <- cii * NA
         }
 
         out[[tt]] <- flag_wrap1_val(flag_tt, cii2)
-        #out[[tt]]$parc_ts <- cii2
       }
       out
     }
@@ -183,7 +177,7 @@ for (with_S1200 in c(TRUE, FALSE)) {
       precomputed_fname <- paste0(subject, "_v", visit + (!test)*2, "_", acquisition, ".rds")
       ms <- try(readRDS(file.path(dir_meanSignals, precomputed_fname)))
       if (inherits(ms, "try-error")) { next }
-      if (length(ms$cii) != 1200) { next } # 119732_v2_LR
+      if (length(ms$cii) != 1200) { next } 
       ms <- scale(as.data.frame(ms)[seq(nDrop+1, hcp_T),])
 
       if (with_FIX) {
@@ -279,7 +273,6 @@ for (with_S1200 in c(TRUE, FALSE)) {
 
       for (bb in seq(nB)) {
         baseName_bb <- baseNames[bb]
-        #nuis_bb <- if (with_FIX) { NULL } else { base_nuis[[bb]] }
         nuis_bb <- base_nuis[[bb]]
         FC_fname <- file.path(dir_FC, baseNames[bb], paste0(dvprefix, suffix, ".rds"))
         #if (file.exists(FC_fname)) { next }
@@ -287,7 +280,6 @@ for (with_S1200 in c(TRUE, FALSE)) {
         FCval_ii <- FCval_plus_ii <- vector("list")
 
         # Get FC values ----------------------------------------------------------
-        # Nothing
         cat("\tBase")
         FCval_ii[["Base"]] <- FCval_plus_ii[["Base"]] <- flag_wrap2_tmasks(NULL, nuis_bb, plus=FALSE, include_DVARS=FALSE)
 

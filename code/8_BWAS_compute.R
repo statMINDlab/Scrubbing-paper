@@ -9,14 +9,7 @@
 source("0_SharedCode.R")
 setwd(dir_slate)
 
-
-library(dplyr)
-
-#[TO DO]
-# Consider what happens when we exclude subjects with < 5 min remaining
-# For this we need the flags, which come from 4_AggFC.R and 5_AggFlags.R
-# Those scripts were previously only run for the retest subjects
-# We are modifying them (May 20 2025) to apply to full HCP also
+library(dplyr) #version 1.1.4
 
 ## ---------------------------------------------------------------------------
 
@@ -29,45 +22,8 @@ nS <- length(subjects_S1200)
 demo <- read.csv(file.path(dir_data_github,'unrestricted_HCP_demographics.csv'))
 demo_RT <- read.csv(file.path(dir_data_github,'unrestricted_HCP_demographics_retest.csv'))
 demo <- subset(demo, as.character(Subject) %in% as.character(demo_RT$Subject))
-#demo_RT <- subset(demo_RT, as.character(Subject) %in% subjects_RT)
 demo <- dplyr::arrange(demo, Subject)
 demo_RT <- dplyr::arrange(demo_RT, Subject)
-
-#narrow down to just behavioral variables
-# y_vars <- names(demo)[-(1:5)]
-# y_vars <- intersect(y_vars, names(demo_RT))
-# str_exclude <- c('3T_', '7T_', 'MRsession_', '_Compl',
-#   'fMRI_', 'dMRI_', 'MEG','_Task_', '_Count', 'QC_Issue',
-#   '_AgeAdj', 'FS_', '_Peak', 'NEORAW', 'Time', 'BedPtnrRmate')
-# for(str in str_exclude){
-#   y_vars <- y_vars[!grepl(str, y_vars)]
-# }
-
-# This was a curated list composed with the help of Leon at NUS
-# y_vars <- c('ReadEng_Unadj',
-#             'PicVocab_Unadj',
-#             'CogFluidComp_Unadj',
-#             'CogEarlyComp_Unadj',
-#             'CogTotalComp_Unadj',
-#             'CogTotalComp_AgeAdj',
-#             'NEOFAC_A',
-#             'NEOFAC_O',
-#             'NEOFAC_C',
-#             'NEOFAC_N',
-#             'NEOFAC_E')
-
-# demo1 <- demo[,y_vars]
-# demo2 <- demo_RT[,y_vars]
-# var_tot <- (apply(demo1, 2, var, na.rm=TRUE) + apply(demo2, 2, var, na.rm=TRUE))/2
-# var_within <- apply(demo1 - demo2, 2, var, na.rm=TRUE) * (1/2)
-# ICC_demo2 <- 1 - var_within/var_tot
-# tail(sort(ICC_demo))
-# #  NEOFAC_C CogCrystalComp_Unadj     LifeSatisf_Unadj
-# # 0.8725569            0.8785331            0.8850693
-# #  NEOFAC_E       Strength_Unadj   CogTotalComp_Unadj
-# # 0.8856918            0.8979873            0.9348177
-# (yvar <- names(ICC_demo[which.max(ICC_demo)])) #CogTotalComp_Unadj
-# saveRDS(ICC_demo, file = file.path(dir_github, 'results', '8_BWAS', 'ICC_demo.rds'))
 
 #redefine demographic/behavioral variables
 y_vars_cat <- read.csv(file.path(dir_github, 'data', 'HCP_S1200_DataDictionary_Oct_30_2023.csv'))
@@ -91,17 +47,12 @@ saveRDS(ICC_demo, file = file.path(dir_github, 'results', '8_BWAS', 'ICC_demo.rd
 # c) Compute cor(X, y). Account for age and sex.
 
 # a) Get the behavioral measure for each subject: CogTotalComp_Unadj
-
-#yvar <- 'CogTotalComp_Unadj'
 demo_df <- read.csv(file.path(dir_data_github,'unrestricted_HCP_demographics.csv'))
 demo_df <- demo_df[,c("Subject","Gender","Age",yvar)]
 #reorder rows of demo_df to match subject ordering in FC array
 row.names(demo_df) <- as.character(demo_df$Subject)
 demo_df <- demo_df[subjects_S1200,]
 y <- demo_df[,yvar]
-# #adjust y (behavioral measure) for age and sex (Z)
-# mod <- lm(CogTotalComp_Unadj ~ Gender + Age, data = demo_df)
-# y <- y - predict(mod, newdata = demo_df)
 
 for (bb in 1:nB) {
 
@@ -117,7 +68,6 @@ for (bb in 1:nB) {
   pfname_FD2 <- scrubNames[5] #partial file name
   fname_bs <- paste0('withS1200_withDVARS_FC_', baseName, '_', pfname_FD2, '.rds')
   FC_true_b <- readRDS(file.path(dir_results, 'results', '4_AggFC', fname_bs))[,,,1,1] #sess x sub x edge
-  #nEdge <- dim(FC_true_b)[3]
 
   gc()
   X <- matrix(FC_true_b, nrow = 4)
@@ -130,9 +80,6 @@ for (bb in 1:nB) {
   var_tot <- (apply(X1, 2, var, na.rm=TRUE) + apply(X2, 2, var, na.rm=TRUE))/2
   var_within <- apply(X1 - X2, 2, var, na.rm=TRUE) * (1/2)
   ICC_X <- 1 - var_within/var_tot
-  #print(summary(ICC_X))
-  #print(mean(ICC_X > 0.8))
-  #print(mean(ICC_X > 0.6))
 
   # project ICC estimate to T = 60 min
   var_sig <- var_tot - var_within #signal variance
@@ -144,53 +91,20 @@ for (bb in 1:nB) {
   #average over 4 sessions (subjects without 4 valid sessions will become NA)
   X <- matrix(colMeans(X), nrow = nS, ncol = nEdge)
   print(sum(is.na(X[,1])))
-  #109 subjects for P36 
-  #109 subjects for FIX
   rm(FC_true_b); gc() #free up memory
   X <- fishZ(X)
 
   # c) Compute cor(X, y). Do NOT adjust for age and sex so the correlations are as strong as possible so the GT is more precise
 
-  # #adjust each x (Fisher z-transformed FC measure) for Z
-  # X <- apply(X, 2, function(x) {
-  #   df_x <- demo_df
-  #   df_x$x <- x
-  #   mod_x <- lm(x ~ Gender + Age, data = df_x)
-  #   return(x - predict(mod_x, newdata = demo_df))
-  # })
-
   #compute correlation between CogTotalComp_Unadj and FC
   keep <- (!is.na(y) & !is.na(rowSums(X))) #identify subjects to use in analysis
 
   print(sum(keep))
-  #991 subjects for P36
-  #991 subjects for FIX
 
   rho_true <- apply(X, 2, function(x) cor(x[keep], y[keep]))
 
-  # #two equivalent ways to compute correlation via regression
-  # use <- (!is.na(y)) & (!is.na(rowSums(X)))
-  # y2 <- scale(y[use])
-  # X2 <- scale(X[use,])
-  # rho_true <- apply(X2, 2, function(x) cor(x, y2, use = 'complete'))
-  # rho_true_CHECK <- apply(X2, 2, function(x) {
-  #   mod <- lm(y2 ~ x - 1)
-  #   coefficients(mod)[1]
-  # })
-  # rho_true_CHECK2 <- apply(X2, 2, function(x) {
-  #   mod <- lm(y2 ~ x - 1)
-  #   sqrt(summary(mod)$r.squared)
-  # })
-  # all.equal(rho_true, rho_true_CHECK) #TRUE
-  # all.equal(abs(rho_true), rho_true_CHECK2) #TRUE
-
   ## ---------------------------------------------------------------------------
   # Part 2: Estimate rho with shorter scan duration
-
-  # a) Vary scrubbing method
-  # b) Vary exclusions: none, 5 minutes
-  # c) Vary sample size: 100-1000, bootstrap to get bands around rho-hat
-  # d) Compute MSE, bias
 
   durations <- c(2.5, 3.75, 5, 6.25, 7.5, 8.75, 10, 12.5, 14.22)
   nDur <- length(durations)

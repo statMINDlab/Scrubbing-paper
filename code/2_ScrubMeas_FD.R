@@ -16,7 +16,6 @@ stopifnot(packageVersion("gsignal") <= "0.3-6.9000")
 #install.packages("devtools")
 #devtools::install_github("gjmvanboxtel/gsignal@937a29758d8c11c5f5f52a3c9cd047fa261a7d49") # 20220619 v0.3.6
 
-# loop over which dataset to analyze (with_S1200 = TRUE for full HCP, FALSE for 42 retest subjects)
 for (with_S1200 in c(TRUE, FALSE)) {
   subjects <- if (with_S1200) { subjects_S1200 } else { subjects_RT }
   iters <- if (with_S1200) { iters_S1200 } else { iters_RT }

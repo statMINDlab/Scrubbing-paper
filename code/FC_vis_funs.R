@@ -57,18 +57,7 @@ ggcorrplot2 <- function(values, colFUN, title, legTitle, divColor="black", lim=N
   # Get cor mat
   mat <- values
   mat <- fMRItools:::cor_mat(mat, names=Labs$label, newOrder=order(Labs$idx2))
-
-  # # Take network-network means in upper tri
-  # mat2 <- mat
-  # for (jj in seq(nrow(gg_pdv)+1)) {
-  #   for (kk in seq(nrow(gg_pdv)+1)) {
-  #     mat2[seq(pdv[jj], pdv[jj+1]-1), parc_res2+1 - seq(pdv[kk], pdv[kk+1]-1)] <- mean(
-  #       mat2[seq(pdv[jj], pdv[jj+1]-1), parc_res2+1 - seq(pdv[kk], pdv[kk+1]-1)], na.rm=TRUE
-  #     )
-  #   }
-  # }
   mat[is.na(mat)] <- diagVal
-  # mat[seq(nrow(mat)), rev(seq(ncol(mat)))][lower.tri(mat)] <- mat2[seq(nrow(mat)), rev(seq(ncol(mat)))][lower.tri(mat)]
 
   # Limits
   if (!is.null(lim)) {
@@ -81,8 +70,6 @@ ggcorrplot2 <- function(values, colFUN, title, legTitle, divColor="black", lim=N
 
   p <- ggcorrplot::ggcorrplot(mat, outline.color = "#00000000", title=title, digits=12) +
     scale_y_discrete(labels=cor_mat_ylabs) +
-    #coord_equal(xlim=c(-4-10, parc_res2+.65), ylim=c(.5, parc_res2+5+10), expand=FALSE, clip = "off") +
-    #coord_equal(xlim=c(0.5, parc_res2+.05), ylim=c(0.5, parc_res2+0.5), expand=FALSE, clip = "off") +
     colFUN(
       c(lim[1], lim[2]), guide=guide_colorbar(ticks.colour = divColor, ticks.linewidth = 1),
       labels = function(x){gsub("0.", ".", x, fixed=TRUE)}, na.value="yellow"
@@ -115,10 +102,6 @@ ggcorrplot2 <- function(values, colFUN, title, legTitle, divColor="black", lim=N
                fill=mbar_cols[seq(nrow(mat))]) +
       annotate("rect", ymin=parc_res2+.5, ymax=parc_res2+5+10, xmin=seq(nrow(mat))-.5, xmax=seq(nrow(mat))+.5,
                fill=mbar_cols[seq(nrow(mat))]) +
-      # annotate("rect", xmin=-4-2, xmax=.5, ymin=parc_res2+.5-seq_len(nrow(mat)), ymax=parc_res2+.5-seq_len(nrow(mat))+1,
-      #          fill=mbar_cols[seq_len(nrow(mat))], color = NA) +
-      # annotate("rect", ymin=parc_res2+.5, ymax=parc_res2+1.5, xmin=seq_len(nrow(mat))-.5, xmax=seq(nrow(mat))+.5,
-      #          fill=mbar_cols[seq_len(nrow(mat))], color = NA) +
 
       #dividers
       geom_rect(aes(xmin=xmin, xmax=xmax, ymin=0, ymax=parc_res2+5+10), data=gg_pdv, fill=divColor) +
@@ -133,7 +116,9 @@ ggcorrplot2 <- function(values, colFUN, title, legTitle, divColor="black", lim=N
       #separate brain region label color bar
       annotate("rect", ymin=0, ymax=parc_res2+.65, xmin=-.5-3, xmax=.35, fill="white") +
       annotate("rect", ymin=parc_res2+.65, ymax=parc_res2+1.5+3, xmin=-.5, xmax=parc_res2+.65, fill="white")
+    
   } else {
+    
     #add border around all edges
     p <- p + annotate("rect", xmin = 0.5, xmax = parc_res2 + 0.5,
              ymin = 0.5, ymax = parc_res2 + 0.5,
@@ -212,7 +197,6 @@ ggImgplot2 <- function(values, fname_start, fname_end, zlim = c(0.1, 0.35), high
   # Get cor mat (419x419)
   mat <- values
   mat <- fMRItools:::cor_mat(mat, names=Labs$label, newOrder=order(Labs$idx2))
-  #all.equal(rownames(mat)[1:400], Labs_reo$label[1:400]) #TRUE
 
   #loop over networks
   dat <- matrix(0*Labs2_mat, nrow=nrow(Labs2_mat), ncol=length(Labs_networks3))
@@ -223,7 +207,6 @@ ggImgplot2 <- function(values, fname_start, fname_end, zlim = c(0.1, 0.35), high
     rows_n <- which(Labs_reo$network3 == net)
     mat_n <- mat[rows_n,]
     Img_n <- rev(colMeans(mat_n, na.rm=TRUE))
-    #all.equal(names(Img_n), Labs_reo$label) #TRUE
     Img_n <- Img_n[1:400] #exclude SC for now
     if(highlightDMN){
       rowsDMN <- grepl("Default", names(Img_n))
@@ -249,4 +232,3 @@ ggImgplot2 <- function(values, fname_start, fname_end, zlim = c(0.1, 0.35), high
   newdata_xifti(convert_to_dscalar(Labs2_xii), dat)
 
 }
-

@@ -7,11 +7,9 @@
 ####################################################################
 
 source("0_SharedCode.R")
-library(ggthemes)
-library(dplyr)
-library(tidyr)
-library(fMRItools) #plot_FC
-library(viridis)
+library(dplyr) #version 1.1.4
+library(tidyr) #version 1.3.1
+library(viridis) #version 0.6.5
 
 ### Read in df_rho and visualize true rho values
 source('code/FC_vis_funs.R')
@@ -39,7 +37,6 @@ ggplot(ICC_demo_df, aes(x = variable, y = ICC, fill=ICC_group)) +
   geom_hline(yintercept = c(0.5, 0.75, 0.9), lty=2, lwd=0.3, col='gray') +
   geom_bar(stat='identity') + coord_flip() +
   ylim(0, 1) + scale_fill_viridis_d(option = 'F') + theme_few() +
-  #put axis lines at 0.5, 0.75, 0.9
   theme(axis.text.y = element_text(size=8),
         axis.title.y= element_blank(),
         legend.position = 'inside',
@@ -52,42 +49,33 @@ dev.off()
 
 ### Visualize BWAS variance vs. N for low-reliability and high-reliability FC
 
-#N <- seq(500, 10000, 10)
 N <- seq(500, 1500, 10)
-#rho <- 0.5
 rho <- 0.1
 load(file = file.path(dir_github, 'results', '8_BWAS', paste0('BWAS_P36_ICC_FC.RData')))
 (ICC_FC_quants <- quantile(ICC_X, probs = c(0.05, 0.5, 0.95), na.rm=TRUE))
-# 5%       50%       95%
-# 0.2211533 0.5154913 0.7935383 
+
 var_rho_df <- expand.grid(N = N, ICC_FC = c(ICC_FC_quants, 1), ICC_y = ICC_y, var = NA)
 var_rho_df$var <- (1/var_rho_df$N) * (1 - rho^2 * var_rho_df$ICC_FC * var_rho_df$ICC_y)^2
 var_rho_df$ICC_FC_grp <- factor(var_rho_df$ICC_FC, levels = rev(c(ICC_FC_quants, 1)),
                                 labels = rev(c('low (Q05)', 'medium (med)', 'high (Q95)', 'perfect')))
 
-#cols <- viridis_pal(option = 'F')(4)
 pdf(file.path(dir_github, 'plots', 'BWAS', 'BWAS_var_math.pdf'), width=6, height=4)
 cols <- c('black','royalblue','darkorchid','deeppink')
 hline_val <- (var_rho_df$var[var_rho_df$N==1500 & var_rho_df$ICC_FC_grp=='low (Q05)']) #BWAS variance for N=1500 for low ICC_FC
 vline_val <- 1/hline_val * (1 - rho^2 * ICC_FC_quants[3] * ICC_y)^2 #theoretical value of N to achieve same BWAS variance for high ICC_FC
-# 1106.668
 ggplot(var_rho_df, aes(x = N, y = sqrt(var), group= ICC_FC_grp, color=ICC_FC_grp)) +
   geom_line() +
-  #geom_vline(xintercept = 10000, lty=2, col='deeppink', alpha = 0.5) +
   geom_vline(xintercept = 1500, lty=2, col='deeppink', alpha = 0.5) +
   geom_hline(yintercept = sqrt(hline_val), lty=2, alpha = 0.5) +
   geom_vline(xintercept = vline_val, lty=2, col='royalblue', alpha = 0.5) +
   ylab('BWAS Standard Deviation') + xlab('Sample Size') +
   scale_color_manual('ICC of FC', values = (cols)) +
-  #scale_x_continuous(breaks = c(500, 2500, 5000, 7500, 10000)) +
   theme_few()
 dev.off()
 
 ################################################################
 
 ### Read in BWAS results and ICC of FC
-
-#[TO DO]: Replace visualizations with FC_plot_gg from fMRItools
 
 df_rho <- NULL
 BWAS_propBias_math_mean <- list()
@@ -131,15 +119,6 @@ for (bb in 2:nB) {
   df_rho_bb$ICC_FC_60min <- ICC_X_60min
   df_rho <- rbind(df_rho, df_rho_bb)
 
-  # #identify edges with high enough ICC so that attenuation is no more than 10%
-  # #attenuation = 1 - sqrt(ICC_X_60min * ICC_y) <= 0.1
-  # #sqrt(ICC_X_60min) >= 0.9/sqrt(ICC_y)
-  # #(ICC_X_60min) >= 0.9^2 / ICC_y
-  # print(ICC_min <- ((0.9^2) / ICC_y)) #0.8664791
-  # high_ICC <- which(ICC_X_60min > ICC_min)
-  # print(length(high_ICC)) #7401 for P36, 2090 for FIX
-  # high_ICC_list[[bb]] <- high_ICC
-
   ### Visualize ICC of FC (T = 30 min)
 
   ICC_X_df <- data.frame(ICC_X = ICC_X)
@@ -149,9 +128,6 @@ for (bb in 2:nB) {
 
   #calculate Q1 and Q3 of ICC_X
   quantile(ICC_X, probs = c(0.25, 0.75), na.rm = TRUE)
-  # for P36:
-  # 25%       75%
-  # 0.4135366 0.6334550
 
   pdf(file.path(dir_plots, "BWAS", paste0("ICC_FC_", baseName,".pdf")), height=4, width=4)
 
@@ -159,7 +135,6 @@ for (bb in 2:nB) {
 
   print(ggplot(ICC_X_df, aes(x = ICC_X)) +
           geom_histogram(aes(fill = ..x..), binwidth = 0.05, color = 'gray20', breaks = seq(0,1,0.05)) +
-          #scale_fill_gradientn(colors = viridis::viridis(100, option = "F", direction = -1), values = scales::rescale(c(0.5, 0.75, 0.9, 1))) +
           scale_fill_viridis_c(option = "F", direction = -1) +
           geom_vline(aes(xintercept = mean(ICC_X, na.rm = TRUE)), color = 'black', linewidth = 0.8, linetype = 'dashed') +
           scale_x_continuous(breaks = seq(0,1,0.2), limits = c(0,1)) +
@@ -172,9 +147,6 @@ for (bb in 2:nB) {
                 axis.text.y = element_blank(),
                 axis.ticks.y = element_blank(),
                 axis.title.y = element_blank()))
-
-  #hist(ICC_X, xlim = c(0,1), breaks = 30, main = Title, xlab='ICC')
-  #abline(v = median(ICC_X, na.rm=TRUE), col='red', lwd=2, lty=2)
 
   #truncate values outside of limits
   ICC_X_lims <- ICC_X
@@ -201,26 +173,13 @@ for (bb in 2:nB) {
 
   print(plt)
 
-  # #color by ICC category
-  # ICC_FC_cat <- rep(NA, nEdge)
-  # ICC_FC_cat[ICC_X < 0.5] <- 'poor'
-  # ICC_FC_cat[ICC_X >= 0.5 & ICC_X < 0.75] <- 'moderate'
-  # ICC_FC_cat[ICC_X >= 0.75 & ICC_X < 0.9] <- 'good'
-  # ICC_FC_cat[ICC_X >= 0.9] <- 'excellent'
-  # mat <- fMRItools:::cor_mat(ICC_FC_cat, names=Labs$label, newOrder=order(Labs$idx2))
-
   dev.off()
 
   ### Visualize Theoretical BWAS Proportional Bias ( = E[rho-hat]/rho)
 
   BWAS_propBias_math <- sqrt(ICC_y)*sqrt(ICC_X)
   print(summary(BWAS_propBias_math))
-  #for 36P:
-  # Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
-  # 0.0000  0.6272  0.6976  0.6900  0.7723  0.9337
   print(quantile(BWAS_propBias_math, probs = c(0.20, 0.80), na.rm=TRUE))
-  # 20%       80%
-  # 0.6063077 0.7922978
 
   BWAS_propBias_math_mean[[baseName]] <- mean(BWAS_propBias_math, na.rm = TRUE)
 
@@ -246,9 +205,6 @@ for (bb in 2:nB) {
                 axis.ticks.x = element_blank(),
                 axis.title.x = element_blank()) +
           coord_flip())
-
-  #hist(BWAS_propBias_math, xlim = c(0,1), breaks = 30, main = Title, xlab='Expected Value / True Value of rho')
-  #abline(v = mean(BWAS_propBias_math, na.rm=TRUE), col='red', lwd=2, lty=2)
 
   #truncate values outside of limits
   limits_propBias <- c(0.5, 1)
@@ -326,24 +282,6 @@ df_rho$Duration2 <- factor(df_rho$Duration2, levels = paste0(seq(5,30,2.5)," min
 
 ################################################################
 
-
-# ### Estimated vs. True rho
-#
-# df_rho2 <- subset(df_rho, Duration2 %in% paste0(c(10,20,30), " min"))
-# pdf(file.path(dir_plots, "BWAS", "est_vs_true.pdf"), height=8, width=12)
-# ggplot(df_rho2, aes(x = rho_true, y = rho_est)) +
-#   geom_vline(xintercept=0, col='gray', lty=2) + geom_hline(yintercept=0, col='gray', lty=2) +
-#   geom_abline(intercept=0, slope=1) +
-#   geom_smooth(aes(group=scrub, color=scrub), se=FALSE) +
-#   scale_color_manual(values = cols_FD) +
-#   facet_grid(base ~ Duration2, scale='free') +
-#   theme_few() + theme(legend.position='bottom') +
-#   ggtitle('Estimated vs. True BWAS Correlation') +
-#   xlab('Ground Truth rho') + ylab('Estimated rho')
-# dev.off()
-
-################################################################
-
 ### Compute and Visualize BWAS Attenuation
 
 df_rho$proportion <- df_rho$rho_est/df_rho$rho_true
@@ -352,18 +290,9 @@ df_rho$proportion[abs(df_rho$rho_true) < 0.01] <- NA # only consider edges with 
 #how many edges are included when we filter out tiny magnitude BWAS?
 df_rho %>% group_by(base) %>% filter(scrub=='Stringent', duration==28.44) %>%
   summarize(mean(abs(rho_true) > 0.01))
-# base    `mean(abs(rho_true) > 0.01)`
-# 1 FIX                            0.822
-# 2 FIX_GSR                        0.849
-# 3 P36                            0.854
-
 
 df_rho_summ <- df_rho %>% group_by(base, scrub, duration) %>%
   summarize(proportion_mean = mean(proportion, na.rm=TRUE)) #mean over edges and visits
-            #proportion_sd = sd(proportion, na.rm=TRUE),
-            #count = sum(!is.na(proportion)))
-#df_rho_summ$proportion_LB <- df_rho_summ$proportion_mean - df_rho_summ$proportion_sd/sqrt(df_rho_summ$count)
-#df_rho_summ$proportion_UB <- df_rho_summ$proportion_mean + df_rho_summ$proportion_sd/sqrt(df_rho_summ$count)
 df_rho_summ <- filter(df_rho_summ, base!= 'P32') #exclude P32
 
 pdf(file.path(dir_plots, "BWAS", "attenuation.pdf"), height=4, width=4.25)
@@ -371,17 +300,12 @@ for(bb in 2:nB){
   base_b <- baseNames[bb]
   p <- ggplot(filter(df_rho_summ, base==base_b),
               aes(x = duration, y = proportion_mean, group=scrub)) +
-    #geom_hline(yintercept=c(0.5), linetype=2, color='gray') + #geom_hline(yintercept=seq(0.5,0.9,0.1), col='gray85') +
-    #geom_hline(yintercept=c(0,1), color='gray') + #geom_hline(yintercept=seq(0.5,0.9,0.1), col='gray85') +
     geom_hline(yintercept = BWAS_propBias_math_mean[[base_b]], color = '#b3ce91', alpha = 0.8, linewidth = 0.8, linetype = 'dashed') +
     scale_y_continuous(labels = percent_format(accuracy = 1), limits=c(0.25,1), breaks=seq(0.25,1,0.25)) +
-    #geom_ribbon(aes(ymin = proportion_LB, ymax = proportion_UB, fill = scrub), alpha=0.3) +
     geom_line(aes(color=scrub)) +
     xlab('Scan Duration (min)') + ylab('BWAS Proportional Strength\n(Cognition Total Composite Score)') +
     scale_x_continuous(breaks=seq(10,30,10), limits = c(5,30)) +
-    #geom_smooth(aes(group=scrub, color=scrub), se=FALSE) +
     scale_color_manual(values = myCols, name = "Scrubbing") + scale_fill_manual(values = myCols, name = "Scrubbing") +
-    #theme_few() +
     cowplot::theme_cowplot() +
     theme(legend.position = c(0.95, 0.10),
           legend.justification = c("right", "bottom")) +
@@ -396,9 +320,9 @@ dev.off()
 #what is the range of correction factors (setting min value of ICC_FC to 0.1)
 (maxICC_FC_36P <- max(df_rho$ICC_FC_60min[df_rho$base=='P36']))
 (maxICC_FC_FIX <- max(df_rho$ICC_FC_60min[df_rho$base=='FIX']))
-1 / ( sqrt(maxICC_FC_FIX) * sqrt(ICC_y) ) #1.064
-1 / ( sqrt(maxICC_FC_36P) * sqrt(ICC_y) ) #1.053
-1 / ( sqrt(0.1) * sqrt(ICC_y) ) #3.27
+1 / ( sqrt(maxICC_FC_FIX) * sqrt(ICC_y) )
+1 / ( sqrt(maxICC_FC_36P) * sqrt(ICC_y) )
+1 / ( sqrt(0.1) * sqrt(ICC_y) )
 
 # "ground truth" BWAS correlations with bias correction
 df_rho$rho_true_corr <- df_rho$rho_true / ( sqrt(df_rho$ICC_FC_60min) * sqrt(ICC_y) )
@@ -413,32 +337,13 @@ percent_removed <- df_rho %>%
     percent_removed = 100 * (removed_edges / total_edges)
   ) %>%
   ungroup()
-# base    scrub     total_edges removed_edges percent_removed
-# <chr>   <fct>           <int>         <int>           <dbl>
-#   1 FIX     None           175142            48          0.0274
-# 2 FIX     Lenient        175142            48          0.0274
-# 3 FIX     Stringent      175142            48          0.0274
-# 4 FIX     Expanded       175142            48          0.0274
-# 5 FIX_GSR None           175142           318          0.182
-# 6 FIX_GSR Lenient        175142           318          0.182
-# 7 FIX_GSR Stringent      175142           318          0.182
-# 8 FIX_GSR Expanded       175142           318          0.182
-# 9 P36     None           175142           462          0.264
-# 10 P36     Lenient        175142           462          0.264
-# 11 P36     Stringent      175142           462          0.264
-# 12 P36     Expanded       175142           462          0.264
 
 df_rho$rho_true_corr[df_rho$ICC_FC_60min < 0.1] <- NA #exclude edges with very low ICC
 
 # get 75th, 90th, 95th, and 99th quantiles
 rho_P36 <- c(unname(quantile(df_rho$rho_true_corr[df_rho$base == "P36"], probs = c(0.75, 0.90, 0.95), na.rm = TRUE)))
-# 0.05030331 0.09081123 0.11400295
-
 rho_FIX <- c(unname(quantile(df_rho$rho_true_corr[df_rho$base == "FIX"], probs = c(0.75, 0.90, 0.95), na.rm = TRUE)))
-# 0.02960510 0.06527186 0.08693607
-
 rho_FIX_GSR <- c(unname(quantile(df_rho$rho_true_corr[df_rho$base == "FIX_GSR"], probs = c(0.75, 0.90, 0.95), na.rm = TRUE)))
-# 0.02842629 0.06921465 0.09402863
 
 E_rhohat <- list()
 
@@ -451,7 +356,6 @@ for (bb in 2:nB) {
     scrub_ss <- FD_levels2[ss]
     load(file = file.path(dir_github, 'results', '8_BWAS', paste0('BWAS_',baseName,'_',scrub_ss,'_ICC_FC.RData')))
     ICC_X[ICC_X < 0] <- 0
-    #rho_edges <- sapply(rho_values, function(rho) rho * sqrt(ICC_X * ICC_y))
     rho_edges <- outer(sqrt(ICC_X * ICC_y), rho_values, FUN = "*")
     colnames(rho_edges) <- round(rho_values, digits = 4)
     E_rhohat[[baseName]][[scrub_ss]] <- rho_edges
@@ -495,13 +399,9 @@ for (i in seq_along(rho_labels)) {
     #summarize over edges for each N
     mean_P36 <- apply(power_P36, 2, mean, na.rm = TRUE)
     median_P36 <- apply(power_P36, 2, median, na.rm = TRUE)
-    #q1_P36 <- apply(power_P36, 2, quantile, probs = 0.25, na.rm = TRUE)
-    #q3_P36 <- apply(power_P36, 2, quantile, probs = 0.75, na.rm = TRUE)
 
     mean_FIX <- apply(power_FIX, 2, mean, na.rm = TRUE)
     median_FIX <- apply(power_FIX, 2, median, na.rm = TRUE)
-    #q1_FIX <- apply(power_FIX, 2, quantile, probs = 0.25, na.rm = TRUE)
-    #q3_FIX <- apply(power_FIX, 2, quantile, probs = 0.75, na.rm = TRUE)
 
     mean_FIX_GSR <- apply(power_FIX_GSR, 2, mean, na.rm = TRUE)
     median_FIX_GSR <- apply(power_FIX_GSR, 2, median, na.rm = TRUE)
@@ -513,15 +413,13 @@ for (i in seq_along(rho_labels)) {
     rho_label_P36 <- paste0("atop(bold('",label,"'), bold((rho == ",formatC(rho_val_P36,format="f",digits=4),")))")
     rho_label_FIX <- paste0("atop(bold('",label,"'), bold((rho == ",formatC(rho_val_FIX,format="f",digits=4),")))")
     rho_label_FIX_GSR <- paste0("atop(bold('",label,"'), bold((rho == ",formatC(rho_val_FIX_GSR,format="f",digits=4),")))")
-    #rho_label_P36 <- paste0(label,"\nρ = (",formatC(rho_val_P36,format="f",digits=4),")")
-    #rho_label_FIX <- paste0(label,"\nρ = (",formatC(rho_val_FIX,format="f",digits=4),")")
 
     power_df <- rbind(power_df,
-                      data.frame(N = N, mean = mean_P36, median = median_P36, #q1 = q1_P36, q3 = q3_P36,
+                      data.frame(N = N, mean = mean_P36, median = median_P36, 
                                  base = "P36", rho_label = rho_label_P36, scrub = scrub_ss),
-                      data.frame(N = N, mean = mean_FIX, median = median_FIX, #q1 = q1_FIX, q3 = q3_FIX,
+                      data.frame(N = N, mean = mean_FIX, median = median_FIX, 
                                  base = "FIX", rho_label = rho_label_FIX, scrub = scrub_ss),
-                      data.frame(N = N, mean = mean_FIX_GSR, median = median_FIX_GSR, #q1 = q1_FIX_GSR, q3 = q3_FIX_GSR,
+                      data.frame(N = N, mean = mean_FIX_GSR, median = median_FIX_GSR, 
                                  base = "FIX_GSR", rho_label = rho_label_FIX_GSR, scrub = scrub_ss))
   }
 }
@@ -535,7 +433,6 @@ for (bb in 2:nB) {
 
   pdf(file.path(dir_plots, "BWAS", paste0("N_power_",baseName,".pdf")), height = 4, width = 10)
   print(ggplot(data = subset(power_df, base == baseName), aes(x = N, color = scrub, fill = scrub)) +
-          #geom_ribbon(aes(ymin = q1, ymax = q3, fill = scrub), alpha = 0.25, color = NA) +
           geom_line(aes(y = median)) +
           facet_wrap(~ rho_label, ncol = 3, labeller = label_parsed) +
           labs(x = "Sample Size (N)", y = "Mean Power", title = "Sample Size and Power") +
@@ -547,7 +444,6 @@ for (bb in 2:nB) {
                 legend.justification = c(1,0),
                 legend.title = element_blank(),
                 strip.background = element_blank(),
-                #strip.text = element_text(face = "bold"),
                 axis.text.x = element_text(angle = 45, hjust = 1)))
   dev.off()
 }
@@ -558,7 +454,6 @@ for(bb in 2:nB){
   df_rho_bb <- filter(df_rho, base==base_b)
   p <- ggplot(df_rho_bb[1:nEdge,], aes(x = rho_true, y = rho_true_corr)) +
     geom_point(aes(color = ICC_FC_60min), alpha=0.5) +
-    #xlim(-0.3,0.3) + ylim(-0.3,0.3) +
     scale_color_viridis_c('FC ICC\n(T = 60)', direction = -1) + theme_few() +
     xlab('Nominal Ground Truth rho') + ylab('Bias-Corrected Ground Truth rho') +
     ggtitle(paste0('Bias-Corrected Ground Truth BWAS (', base_b, ')'))
@@ -572,18 +467,9 @@ df_rho$proportion[abs(df_rho$rho_true_corr) < 0.01] <- NA # only consider edges 
 #how many edges are included when we filter out tiny magnitude BWAS?
 df_rho %>% group_by(base) %>% filter(scrub=='Stringent', duration==28.44) %>%
   summarize(mean(abs(rho_true_corr) > 0.01, na.rm=TRUE))
-# base    `mean(abs(rho_true_corr) > 0.01, na.rm = TRUE)`
-# 1 FIX                                               0.858
-# 2 FIX_GSR                                           0.880
-# 3 P36                                               0.888
-
 
 df_rho_summ <- df_rho %>% group_by(base, scrub, duration) %>%
   summarize(proportion_mean = mean(proportion, na.rm=TRUE)) #mean over edges and visits
-#proportion_sd = sd(proportion, na.rm=TRUE),
-#count = sum(!is.na(proportion)))
-#df_rho_summ$proportion_LB <- df_rho_summ$proportion_mean - df_rho_summ$proportion_sd/sqrt(df_rho_summ$count)
-#df_rho_summ$proportion_UB <- df_rho_summ$proportion_mean + df_rho_summ$proportion_sd/sqrt(df_rho_summ$count)
 df_rho_summ <- filter(df_rho_summ, base!= 'P32') #exclude P32
 
 pdf(file.path(dir_plots, "BWAS", "attenuation_biascorr.pdf"), height=6.45, width=3)
@@ -592,7 +478,6 @@ for(bb in 2:nB){
   p <- ggplot(filter(df_rho_summ, base==base_b),
               aes(x = duration, y = proportion_mean, group=scrub)) +
     geom_hline(yintercept = BWAS_propBias_math_mean[[base_b]], color = '#b3ce91', alpha = 0.8, linewidth = 0.8, linetype = 'dashed') +
-    #scale_y_continuous(labels = percent_format(accuracy = 1), limits=c(0.20,0.75), breaks=seq(0,75,0.25)) +
     scale_y_continuous(labels = percent_format(accuracy = 1), 
                        limits=c(0.20,0.75), 
                        breaks=seq(0,75,0.1),
@@ -617,79 +502,3 @@ for(bb in 2:nB){
   print(p)
 }
 dev.off()
-
-
-
-
-# ### Bias (among edges with magnitude >= 0.1)
-#
-# df_rho$rho_est2 <- df_rho$rho_est
-# df_rho$rho_est2[sign(df_rho$rho_est) != sign(df_rho$rho_true)] <- 0 #if sign changes, truncate estimate at 0
-# df_rho$rho_est2[abs(df_rho$rho_true) < 0.1] <- NA #only consider edges with mag >= 0.1
-# df_rho$bias <- df_rho$rho_est2 - df_rho$rho_true
-# df_rho$bias[df_rho$rho_true < 0] <- -1*(df_rho$bias[df_rho$rho_true < 0]) #for negative edges, flip the sign of the bias
-#
-# #plot mean BWAS bias among all edges with rho magnitude >= 0.1
-# df_rho_summ <- df_rho %>% filter(abs(rho_true) >= 0.1) %>%
-#   group_by(base, scrub, duration) %>%
-#     summarize(bias_mean = mean(bias, na.rm=TRUE),
-#               bias_sd = sd(bias, na.rm=TRUE),
-#               count = sum(!is.na(bias)))
-# df_rho_summ$bias_LB <- df_rho_summ$bias_mean - df_rho_summ$bias_sd/sqrt(df_rho_summ$count)
-# df_rho_summ$bias_UB <- df_rho_summ$bias_mean + df_rho_summ$bias_sd/sqrt(df_rho_summ$count)
-#
-# pdf(file.path(dir_plots, "BWAS", "bias_mean.pdf"), height=5, width=8)
-# ggplot(df_rho_summ, aes(x = duration, y = bias_mean)) +
-#   geom_hline(yintercept = 0) +
-#   geom_ribbon(aes(ymin = bias_LB, ymax = bias_UB, fill = scrub), alpha=0.3) +
-#   geom_line(aes(color=scrub, group=scrub)) +
-#   facet_grid(. ~ base) +
-#   scale_color_manual(values = cols_FD) + scale_fill_manual(values = cols_FD) +
-#   theme_few() + xlab('Scan Duration') +
-#   ggtitle('BWAS Magnitude Bias') + ylab('mean among edges of magnitude >= 0.1')
-# dev.off()
-#
-#
-# ### MSE
-#
-# df_rho$err <- abs(df_rho$rho_est - df_rho$rho_true)
-#
-# for(bb in 1:nB){
-#
-#   baseName <- baseNames[bb]
-#   pdf(file.path(dir_plots, "BWAS", paste0("abs_err_",baseName,".pdf")), height=5, width=6)
-#   durs <- levels(df_rho$Duration2)
-#   for(dd in durs[seq(1,11,2)]){
-#     df_rho_db <- filter(df_rho, Duration2==dd, base==baseName)
-#     print(ggplot(df_rho_db, aes(x = rho_true, y = err^2)) +
-#             geom_smooth(aes(color=scrub, group=scrub)) +
-#             facet_grid(. ~ base) + ylim(0,0.125^2) +
-#             scale_color_manual(values = cols_FD) + scale_fill_manual(values = cols_FD) +
-#             theme_few() + xlab('True Rho Value') +
-#             ggtitle(paste0('BWAS Error vs. Truth, T = ', dd )) + ylab('Mean Squared Error'))
-#   }
-#   dev.off()
-#
-# }
-#
-# df_rho$err <- (df_rho$rho_est - df_rho$rho_true)
-#
-# for(bb in 1:nB){
-#
-#   baseName <- baseNames[bb]
-#   pdf(file.path(dir_plots, "BWAS", paste0("raw_err_",baseName,".pdf")), height=5, width=6)
-#   durs <- levels(df_rho$Duration2)
-#   for(dd in durs[seq(1,11,2)]){
-#     df_rho_db <- filter(df_rho, Duration2==dd, base==baseName)
-#     print(ggplot(df_rho_db, aes(x = rho_true, y = err)) +
-#             geom_hline(yintercept = 0, lty=2) + geom_vline(xintercept = 0, lty=2) +
-#             geom_smooth(aes(color=scrub, group=scrub)) +
-#             facet_grid(. ~ base) + ylim(-0.125,0.125) +
-#             scale_color_manual(values = cols_FD) + scale_fill_manual(values = cols_FD) +
-#             theme_few() + xlab('True Rho Value') +
-#             ggtitle(paste0('BWAS Error vs. Truth, T = ', dd )) + ylab('Estimate - True Value'))
-#   }
-#   dev.off()
-#
-# }
-#

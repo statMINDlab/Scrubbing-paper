@@ -11,11 +11,10 @@
 source("0_SharedCode.R")
 
 #load additional packages
-library(ggthemes)
-library(ggpointdensity)
-library(viridis)
-library(reshape2)
-library(dplyr)
+library(ggpointdensity) #version 0.1.0
+library(viridis) #version 0.6.5
+library(reshape2) #version 1.4.4
+library(dplyr) #version 1.1.4
 
 #create vector with reordering of parcels
 reordering <- read.csv(file.path(dir_github, "data", "reordering.csv"))
@@ -53,15 +52,11 @@ nEdge400 <- 400*399/2
 
 #loop over base denoising methods
 nFD <- length(FD_levels) #FD_levels <- c("None","FD5","FD2","FD2+")
-#nFD <- length(FD_levels2) #including FD3 and FD4
 
 #plot QCFC measures by euclidean distance using QCFC_all_df (QCFC_adj_df and QCFC_naive_df)
 for(bb in baseNames){
-  # if (bb=="P32") { next } # DAMON TEMP
 
   print(bb)
-
-  # load in QCFC data frames
 
   #QCFC_naive_df, QCFC_adj_df, QCFC_within_df
   load(file = file.path(dir_github, 'results', '7_QCFC', paste0('QCFC_df_',bb,'.RData')))
@@ -77,7 +72,6 @@ for(bb in baseNames){
   QCFC_naive_df <- subset(QCFC_naive_df, in400==1)
   QCFC_within_df <- subset(QCFC_within_df, in400==1)
   QCFC_adj_df$dist <- QCFC_naive_df$dist <- QCFC_within_df$dist <- ut_vector #add in distance between pairs of 400 cortical nodes
-  #QCFC_adj_df$scrub <- QCFC_naive_df$scrub <- QCFC_within_df$scrub <- factor(QCFC_adj_df$scrub, levels = FD_levels) #categorize by level of scrubbing
   QCFC_adj_df$scrub <- QCFC_naive_df$scrub <- QCFC_within_df$scrub <- factor(QCFC_adj_df$scrub, levels = FD_levels2) #categorize by level of scrubbing
 
 
@@ -131,7 +125,6 @@ for(bb in baseNames){
             geom_smooth(method="lm", col='red') +
             geom_text(data = cor_v, aes(label = mycor2, x=Inf, y=Inf, hjust=1.15, vjust=1.5), col='red', size = 4) +
             scale_y_continuous(breaks = yscale) +
-            #theme_few() +
             cowplot::theme_cowplot() +
             facet_grid(col = vars(scrub), scales='free', labeller=custom_labels) +
             labs(title = v, x = 'Node-Node Distance', y = yaxis[[v]]$ytitle) +
@@ -142,9 +135,6 @@ for(bb in baseNames){
   }
 
   ### PLOT TYPE 1b: Plot trend lines for naive and adjusted QCFC by euclidean distance
-
-  #add a fake variable for faceting
-  #QCFC_long$blank <- ""
 
   myCols <- c("black", "#5585bd", "#b3ce91", "#b63545") #for None / FD5 / FD2 / FD2+
   yscale <- if (bb == "P36") { c(0,0.02,0.04) } else { seq(0,0.40,by=0.1) }
@@ -167,9 +157,7 @@ for(bb in baseNames){
             scale_color_manual(values = myCols) +
             scale_y_continuous(breaks = yscale) +
             coord_cartesian(ylim = ycoord) +
-            #theme_few() +
             cowplot::theme_cowplot() +
-            #facet_grid(rows=vars(blank), col= vars(scrub), scales='free') +
             labs(title = paste0(v, "\n"), x='Node-Node Distance', y=yaxis[[v]]$ytitle) +
             theme(legend.position=c(0.97,0.98),
                   legend.justification=c("right","top"),
@@ -180,21 +168,6 @@ for(bb in baseNames){
                   legend.spacing.y = unit(0.1, "cm")))
     dev.off()
 
-    # pdf(file.path(dir_github, "plots", "QCFC", bb, fname2), width=4, height=3.5) #QCFC_distance_trend_smooth
-    # print(ggplot(df_v, aes(x=dist, y=value, color=scrub, group=scrub)) +
-    #         geom_hline(yintercept=0, col='black') +
-    #         geom_smooth(method='loess', se=FALSE, linewidth = 0.7) +
-    #         scale_color_manual(values = myCols) +
-    #         scale_y_continuous(breaks = yscale) +
-    #         #coord_cartesian(ylim = ycoord) +
-    #         theme_few() +
-    #         #facet_grid(rows=vars(blank), col= vars(scrub), scales='free') +
-    #         labs(title = v, x='Node-Node Distance', y='Motion-FC Correlation') +
-    #         theme(legend.position='bottom',
-    #               legend.title=element_blank(),
-    #               legend.text=element_text(size=8.5),
-    #               legend.spacing.x=unit(0.05, "cm")))
-    # dev.off()
   }
 
   ### PLOT TYPE 2: Plot simple within-subject QCFC by euclidean distance
@@ -203,7 +176,7 @@ for(bb in baseNames){
 
   pdf(file.path(dir_github, "plots", "QCFC", bb, "QCFC_Within_Distance.pdf"), width=8, height=3.5) #QCFC_distance
   #loop over subsets of subjects
-  for(s in c('all','hivar')){ #,'hivar_hiFD','hivar_loFD')
+  for(s in c('all','hivar')){ 
 
     QCFC_within_dfs <- QCFC_within_df[,c(s,'scrub','dist','edge')]
     names(QCFC_within_dfs)[1] <- 'QCFC'
@@ -217,10 +190,6 @@ for(bb in baseNames){
                                count = n())
     QCFC_within_dist_cor$mycor2 <- paste0('r = ', format(round(QCFC_within_dist_cor$mycor, 3), nsmall=3))
 
-    #remove FD4
-    # QCFC_within_dfs <- subset(QCFC_within_dfs, scrub != 'FD4')
-    # QCFC_within_dist_cor <- subset(QCFC_within_dist_cor, scrub != 'FD4')
-
     print(ggplot(QCFC_within_dfs, aes(x=dist, y=QCFC)) +
             stat_density_2d(geom='polygon', alpha = 0.2, fill='royalblue') +
             geom_hline(yintercept=0, col='black') +
@@ -233,4 +202,3 @@ for(bb in baseNames){
   dev.off()
 
 } #end loop over baseline denoising
-

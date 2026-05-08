@@ -10,9 +10,8 @@
 source("code/0_SharedCode.R")
 setwd(dir_slate)
 
-library(dplyr)
+library(dplyr) #version 1.1.4
 
-#gt <- "FD2+"
 gt <- "FD2"
 
 A_sessions <- c("test_LR1","test_RL1")
@@ -22,10 +21,9 @@ aggFD <- readRDS(file.path(dir_results, "results/6_scrubRate/AggFD_withSubjectSp
 load(file = file.path(dir_github,'data','subjects_retest.RData')) #sub_drop, sub_himo, sub_lomo (from 6_ScrubbingRate.R)
 #sub_drop based on ground truth scan duration < 50 min
 
-# Scrubbing Flags -------------------
+# Scrubbing Flags --------------------------------------------------------------
 
-# Collect scrubbing rate by method (T=10 min)  ----------
-
+# Collect scrubbing rate by method (T=10 min) 
 flags <- readRDS(file.path(dir_results, 'results', '5_flags', 'withDVARS_flags.rds'))
 saveRDS(flags, file.path(dir_github, 'results', '5_flags', 'withDVARS_flags.rds')) #copy to Github
 dimnames(flags)[[5]] <- c("None","FD5","FD4","FD3","FD2")
@@ -43,15 +41,14 @@ flags_5min <- rbind(A = colSums(flags_5min[A_sessions,, drop = FALSE]),
 unflagged_5min <- (208*2) - flags_5min
 exclude_5min <- (unflagged_5min < 150) #exclude sessions with less than 150 volumes remaining
 
-# Plot proportion of volumes scrubbed (T=10 min) ----------
-flags <- flags[c("test_LR1","test_LR2","test_RL1","test_RL2"),,,"first_5_mins",,1] #same for all denoising methods
+# Plot proportion of volumes scrubbed (T=10 min) -------------------------------
+flags <- flags[c("test_LR1","test_LR2","test_RL1","test_RL2"),,,"first_5_mins",,1] 
 sub_keep_inds <- !(dimnames(flags)[[2]] %in% as.character(sub_drop))
 flags <- flags[,sub_keep_inds,,]
 
 saveRDS(flags, file = file.path(dir_github,'results','5_flags','flags.rds'))
-#flags <- readRDS(file = file.path(dir_github,'results','5_flags','flags.rds'))
 
-# Effective Sample Size -------------
+# Effective Sample Size --------------------------------------------------------
 
 #read in estimated ACFs for each session
 ACFs <- readRDS(file.path(dir_results,'results/4_FC_ACFs.rds'))
@@ -85,7 +82,7 @@ T_eff_fun <- function(acf, scrub){
   nT_scrub^2 / sum(cor_mat^2)
 }
 
-#compute effective sample size for each base method, scrubbing method, and run!
+#compute effective sample size for each base method, scrubbing method, and run
 dims <- dim(flags)[-3]
 T_eff <- array(NA, dim = dims, dimnames = dimnames(flags)[-3])
 names(dimnames(T_eff)) <- c('run','subject','scrub')
@@ -113,12 +110,12 @@ nVol_df$FD <- factor(nVol_df$FD, levels = FD_levels2)
 
 baseNames <- baseNames[-1]
 
-# Make data.frame of err values ----------
+# Make data.frame of err values ------------------------------------------------
 for (base in baseNames) {
 
   print(paste0('~~~~~~~~~~~~~~~~~~~~~~~~~~ ',base, ' ~~~~~~~~~~~~~~~~~~~~~~~~~~ '))
 
-  # #0. read in error values (est - ground truth), take abs value, and take weighted avg over test splits
+  #0. read in error values (est - ground truth), take abs value, and take weighted avg over test splits
   err <- readRDS(file.path(dir_err, paste0("withDVARS_err_", base, ".rds")))
   err_plus <- readRDS(file.path(dir_err, paste0("withDVARS_err_", base, "_plus", ".rds")))
 
@@ -151,7 +148,6 @@ for (base in baseNames) {
       #compute denominator for weighted average
       total_weights <- A_weights + B_weights
       total_weights_plus <- A_weights_plus + B_weights_plus
-      #avoid dividing by 0 if both runs excluded
       total_weights[total_weights == 0] <- NA
       total_weights_plus[total_weights_plus == 0] <- NA
 
@@ -195,17 +191,11 @@ for (base in baseNames) {
   saveRDS(err_all, file.path(dir_results, 'results', paste0('err_all_', base, '.rds')))
   saveRDS(err_all2, file.path(dir_results, 'results', paste0('err_all2_', base, '.rds')))
   saveRDS(bias_all, file.path(dir_results, 'results', paste0('bias_all_', base, '.rds')))
-  #err_all <- readRDS(file.path(dir_results, 'results', paste0('err_all_', base, '.rds')))
-  #err_all2 <- readRDS(file.path(dir_results, 'results', paste0('err_all2_', base, '.rds')))
-  #bias_all <- readRDS(file.path(dir_results, 'results', paste0('bias_all_', base, '.rds')))
 
   names(dimnames(err_all)) <- names(dimnames(err_all2)) <- names(dimnames(bias_all)) <- c('Subject','Edge','Duration','FD')
   dimnames(err_all)[[2]] <- dimnames(err_all2)[[2]] <- dimnames(bias_all)[[2]] <- 1:nEdge
 
-  ### 3. SUMMARIZE OVER EDGES/SUBJECTS:
-
-  #      A) median/mean FC error over edges (by subject) -- for boxplots/tests and FC error vs duration line plots
-  #      B) median/mean FC error over subjects (by edge) -- for matrix plots
+  #3. summarize over edges/subjects
 
   # A) median/mean FC error (and bias) over edges (by subject)  -- for boxplots/tests and FC error vs duration line plots
   MAE_subj <- apply(err_all, c(1,3,4), median, na.rm = TRUE)
@@ -213,15 +203,15 @@ for (base in baseNames) {
   bias_subj <- apply(bias_all, c(1,3,4), mean, na.rm = TRUE)
 
   # B) median and mean FC error over subjects (by edge) -- for matrix plots
-  MAE_edge <- apply(err_all, 2:4, median, na.rm=TRUE) #all subjects
+  MAE_edge <- apply(err_all, 2:4, median, na.rm=TRUE) 
   inds_himo <- dimnames(err_all)[[1]] %in% sub_himo #indices of high-motion subjects
-  MAE_edge_himo <- apply(err_all[inds_himo,,,], 2:4, median, na.rm=TRUE) #high-motion subjects
-  MAE_edge_lomo <- apply(err_all[!inds_himo,,,], 2:4, median, na.rm=TRUE) #low-motion subjects
-  rMSE_edge <- sqrt(apply(err_all^2, 2:4, mean, na.rm=TRUE)) #all subjects
-  rMSE_edge_himo <- sqrt(apply((err_all[inds_himo,,,])^2, 2:4, mean, na.rm=TRUE)) #high-motion subjects
-  rMSE_edge_lomo <- sqrt(apply((err_all[!inds_himo,,,])^2, 2:4, mean, na.rm=TRUE)) #low-motion subjects
+  MAE_edge_himo <- apply(err_all[inds_himo,,,], 2:4, median, na.rm=TRUE) 
+  MAE_edge_lomo <- apply(err_all[!inds_himo,,,], 2:4, median, na.rm=TRUE) 
+  rMSE_edge <- sqrt(apply(err_all^2, 2:4, mean, na.rm=TRUE)) 
+  rMSE_edge_himo <- sqrt(apply((err_all[inds_himo,,,])^2, 2:4, mean, na.rm=TRUE)) 
+  rMSE_edge_lomo <- sqrt(apply((err_all[!inds_himo,,,])^2, 2:4, mean, na.rm=TRUE)) 
 
-  ### 4. CONVERT ARRAYS TO DATA FRAMES
+  #4. convert arrays to data frames
 
   #median/mean over edges by subject
   MAE_subj <- as.data.frame.table(MAE_subj, responseName = 'MAE')
@@ -246,11 +236,11 @@ for (base in baseNames) {
               MSE = (mean(rMSE^2, na.rm=TRUE))) #for the mean does not matter if we summarize over edges or subjects first
 
   #save results for visualization
-  save(MAE_edge, file = file.path(dir_results, 'results','7_MAE',paste0('MAE_edge_',base,'.RData'))) #too large for Github
+  save(MAE_edge, file = file.path(dir_results, 'results','7_MAE',paste0('MAE_edge_',base,'.RData')))
   save(MAE_subj, MAE_edge_summ, file = file.path(dir_github, 'results','7_MAE',paste0('MAE_',base,'.RData')))
   save(bias_subj, file = file.path(dir_github, 'results','7_MAE',paste0('bias_',base,'.RData')))
 
-  ### 5. COMPUTE DIFFERENCES IN ERROR VS. NO SCRUBBING
+  #5. compute differences in error vs. no scrubbing 
 
   compute_diff <- function(df, FD_base, group_cols, value_col, pct=TRUE){
     if(is.character(value_col)) value_col <- which(names(df)==value_col)
@@ -274,14 +264,9 @@ for (base in baseNames) {
 
   #save results for visualization
   saveRDS(MAE_subj, file = file.path(dir_github, 'results','7_MAE',paste0('MAE_diff_subj_',base,'.rds')))
-  saveRDS(MAE_edge, file = file.path(dir_results, 'results','7_MAE',paste0('MAE_diff_edge_',base,'.rds'))) #too large for Github
+  saveRDS(MAE_edge, file = file.path(dir_results, 'results','7_MAE',paste0('MAE_diff_edge_',base,'.rds')))
 
-  ### 6. Compute BASELINE VARIANCE using nominal and effective sample size (T=10 min)
-
-  #      A) Get ESS (effective scan duration)
-  #      B) Get squared error (T = 10 min)
-  #      C) Merge and compute baseline SD
-  #      D) Summarize over edges
+  #6. compute BASELINE VARIANCE using nominal and effective sample size (T=10 min)
 
   # A) get ESS (nVol_eff) -- sum effective scan duration over runs, average over visits
   T_eff_sum <- T_eff_df[[base]] %>%
@@ -327,7 +312,7 @@ for (base in baseNames) {
   baselineSD_edge <- baselineSD_edge[,c(1:2,7,3:6)]
   baselineSD_edge <- rbind(baselineSD_edge, baselineSD_edge_grp); rm(baselineSD_edge_grp)
 
-  ### 7. COMPUTE DIFFERENCES IN BASELINE SD VS. NO SCRUBBING
+  #7. compute differences in baseline SD vs. no scrubbing
 
   baselineSD_edge$baselineSDnom_med_delta <- compute_diff(df=baselineSD_edge, FD_base='None', group_cols=1:3, value_col=4)
   baselineSD_edge$baselineSDeff_med_delta <- compute_diff(df=baselineSD_edge, FD_base='None', group_cols=1:3, value_col=5)
@@ -343,10 +328,8 @@ for (base in baseNames) {
   save(baselineSD_subj, file = file.path(dir_github, 'results','7_MAE',paste0('baselineSD_',base,'.RData')))
   save(baselineSD_edge, file = file.path(dir_results, 'results','7_MAE',paste0('baselineSD_edge_',base,'.RData')))
 
+  #8. determine duration to achieve "target" MSE at each edge/subject (based on lenient censoring at duration = 17.5 min)
 
-  ### 8. Determine duration to achieve "target" MSE at each edge/subject (based on lenient censoring at duration = 17.5 min)
-
-  # Why 17.5 min? Note that (30-17.5)/17.5 = 71% increase and (17.5-5)/17.5 = 71% decrease
   targetDur <- 17.5 #halfway between the min (5 min) and max (~30 min)
   targetDurText <- paste0('first_',targetDur/2,'_mins') #divide by 2 because total duration is split over 2 runs
 
@@ -376,9 +359,7 @@ for (base in baseNames) {
   #it returns the minimum of all roots (the minimum duration required to achieve the target)
   #it will return 0 or Inf if the function does not cross the target
   find_min_root <- function(x, y, y_target) {
-    #if the observed MAEs are always above the target, return Inf
     if(all(y > y_target)) return(Inf)
-    #if the observed MAEs are always below the target, return 0
     if(all(y < y_target)) return(0)
     roots <- numeric()
     for (i in 1:(length(x) - 1)) {
@@ -412,16 +393,9 @@ for (base in baseNames) {
 
   #what proportion of edges never achieve the target MAE?
   MAE_minDur_edge %>% group_by(FD) %>% summarize(mean(is.infinite(minDur)))
-  # For base = P36:
-  # 1 FD5                         0
-  # 2 FD2                         0.129
-  # 3 FD2+                        0.309
 
   #what proportion of edges require less than 5 minutes to achieve the target MAE?
   MAE_minDur_edge %>% group_by(FD) %>% summarize(mean((minDur==0)))
-  # For 36P:
-  # 2 FD2                  0.0500
-  # 3 FD2+                 0.0979
 
   ### Compute the percentage change in required duration (vs minDur for FD5)
 
@@ -439,15 +413,9 @@ for (base in baseNames) {
 
   #what proportion of edges require longer duration vs. Lenient?
   MAE_minDur_edge %>% group_by(FD) %>% summarize(mean(Duration_change_mins > 0))
-  # For 36P:
-  # 2 FD2                              0.605
-  # 3 FD2+                             0.620
 
   #what proportion of edges require more than double the scan duration (> 100%)?
   MAE_minDur_edge %>% group_by(FD) %>% summarize(mean(Duration_change_pct > 1))
-  # For 36P:
-  # 2 FD2                            0.0758
-  # 3 FD2+                           0.133
 
   #save for visualization
   save(MAE_minDur_subj, file = file.path(dir_github, 'results','7_MAE',paste0('minDuration_subj_',base,'.RData')))

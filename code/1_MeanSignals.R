@@ -48,10 +48,6 @@ for (with_S1200 in c(TRUE, FALSE)) {
 
     # If retest, the data needs to be loaded.
     if (!test) {
-      
-      # data_zip_MPP <- file.path(
-      #   dir_HCP_retest_archive, paste0(subject, "_3T_rfMRI_REST", visit, "_preproc.zip")
-      # )
 
       for (fname in fnames[c("CIFTI", "CIFTI_FIX", "NIFTI")]) {
         
